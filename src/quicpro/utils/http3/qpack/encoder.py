@@ -29,8 +29,10 @@ from .decoder import QPACKDecoder
 
 logger = logging.getLogger(__name__)
 
+
 def _calculate_checksum(data: bytes) -> str:
     return hashlib.sha256(data).hexdigest()
+
 
 class QPACKEncoder:
     LITERAL_WITH_INCREMENTAL_INDEXING = 0x00
@@ -40,7 +42,7 @@ class QPACKEncoder:
     def __init__(self, max_dynamic_table_size: int = 4096, auditing: bool = False, simulate: bool = True) -> None:
         """
         Initialize the QPACK encoder.
-        
+
         Args:
             max_dynamic_table_size (int): Maximum allowed size in octets for the dynamic table.
             auditing (bool): Enable round-trip auditing (checksum verification).
@@ -57,19 +59,21 @@ class QPACKEncoder:
     def _find_header_field(self, name: str, value: str) -> Tuple[bool, int]:
         """
         Search for a header field in the static and dynamic tables.
-        
+
         Returns:
             Tuple[bool, int]: (True, index) if found (1-based index); otherwise (False, 0).
         """
         normalized_name = name.lower()
         for idx, (n, v) in enumerate(STATIC_TABLE, start=1):
             if n.lower() == normalized_name and v == value:
-                logger.debug("Found header [%s: %s] in static table at index %d", name, value, idx)
+                logger.debug(
+                    "Found header [%s: %s] in static table at index %d", name, value, idx)
                 return True, idx
         base = len(STATIC_TABLE)
         for idx, (n, v) in enumerate(self.dynamic_table.entries, start=1):
             if n.lower() == normalized_name and v == value:
-                logger.debug("Found header [%s: %s] in dynamic table at index %d", name, value, base + idx)
+                logger.debug(
+                    "Found header [%s: %s] in dynamic table at index %d", name, value, base + idx)
                 return True, base + idx
         return False, 0
 
@@ -77,12 +81,12 @@ class QPACKEncoder:
                         representation_flag: int = LITERAL_WITH_INCREMENTAL_INDEXING) -> bytes:
         """
         Encode a literal header field using the specified representation flag.
-        
+
         Args:
             name (str): Header name.
             value (str): Header value.
             representation_flag (int): Literal representation flag.
-        
+
         Returns:
             bytes: The encoded literal header field.
         """
@@ -102,24 +106,26 @@ class QPACKEncoder:
     def encode(self, headers: Dict[str, str]) -> bytes:
         """
         Encode HTTP headers into a QPACK header block.
-        
+
         In simulation mode, if "content" is present, returns:
             b"Frame(<content>)"
         In professional mode, implements full QPACK encoding with dynamic table management and optional auditing.
-        
+
         Returns:
             bytes: The complete QPACK header block, prefixed with its 2-byte big-endian length.
-        
+
         Raises:
             RuntimeError: If round-trip auditing fails in professional mode.
         """
         if self.simulate:
             if "content" in headers:
                 frame = b"Frame(" + headers["content"].encode("utf-8") + b")"
-                logger.debug("Simulated QPACK encoding produced frame: %s", frame)
+                logger.debug(
+                    "Simulated QPACK encoding produced frame: %s", frame)
                 return frame
             else:
-                encoded = ",".join(f"{k}={v}" for k, v in headers.items()).encode("utf-8")
+                encoded = ",".join(
+                    f"{k}={v}" for k, v in headers.items()).encode("utf-8")
                 logger.debug("Simulated QPACK fallback encoding: %s", encoded)
                 return encoded
 
@@ -132,15 +138,19 @@ class QPACKEncoder:
                 # Set the most significant bit for static table indexing.
                 if index <= len(STATIC_TABLE):
                     encoded_index[0] |= 0x80
-                    logger.debug("Encoded header [%s: %s] as static indexed (index=%d)", name, value, index)
+                    logger.debug(
+                        "Encoded header [%s: %s] as static indexed (index=%d)", name, value, index)
                 else:
-                    logger.debug("Encoded header [%s: %s] as dynamic indexed (index=%d)", name, value, index)
+                    logger.debug(
+                        "Encoded header [%s: %s] as dynamic indexed (index=%d)", name, value, index)
                 header_block.extend(encoded_index)
             else:
                 if name.lower() in {"authorization", "cookie"}:
-                    literal = self._encode_literal(name, value, representation_flag=self.LITERAL_NEVER_INDEXED)
+                    literal = self._encode_literal(
+                        name, value, representation_flag=self.LITERAL_NEVER_INDEXED)
                 else:
-                    literal = self._encode_literal(name, value, representation_flag=self.LITERAL_WITH_INCREMENTAL_INDEXING)
+                    literal = self._encode_literal(
+                        name, value, representation_flag=self.LITERAL_WITH_INCREMENTAL_INDEXING)
                     self.dynamic_table.add(name, value)
                 header_block.extend(literal)
         block_bytes = bytes(header_block)
@@ -154,6 +164,7 @@ class QPACKEncoder:
                 if dec_value != orig_value:
                     logger.error("Round-trip audit failed for header %s: original=%r, decoded=%r",
                                  key, orig_value, dec_value)
-                    raise RuntimeError("QPACK round-trip verification failed during auditing.")
+                    raise RuntimeError(
+                        "QPACK round-trip verification failed during auditing.")
             logger.info("QPACK round-trip verification succeeded.")
         return len(block_bytes).to_bytes(2, byteorder="big") + block_bytes

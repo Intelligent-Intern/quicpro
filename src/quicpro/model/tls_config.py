@@ -1,6 +1,5 @@
 """
 Module defining the TLS configuration model for QUIC encryption and decryption.
-
 This model uses Pydantic to ensure that the AES-GCM key is exactly 32 bytes and the IV
 is exactly 12 bytes.
 """
@@ -31,7 +30,6 @@ class TLSConfig(BaseModel):
     @field_validator("key")
     @classmethod
     def validate_key(cls, v: bytes) -> bytes:
-        """Validate that the key is exactly 32 bytes."""
         if len(v) != 32:
             raise ValueError("Key must be exactly 32 bytes (256 bits).")
         return v
@@ -39,7 +37,6 @@ class TLSConfig(BaseModel):
     @field_validator("iv")
     @classmethod
     def validate_iv(cls, v: bytes) -> bytes:
-        """Validate that the IV is exactly 12 bytes."""
         if len(v) != 12:
             raise ValueError("IV must be exactly 12 bytes.")
         return v

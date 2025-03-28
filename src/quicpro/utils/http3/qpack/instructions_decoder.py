@@ -9,6 +9,7 @@ representing the new maximum dynamic table size.
 
 from .varint import decode_integer
 
+
 def decode_dynamic_table_size_update(data: bytes, pos: int) -> (int, int):
     """
     Decode a dynamic table size update instruction from the data starting at pos.
@@ -20,7 +21,7 @@ def decode_dynamic_table_size_update(data: bytes, pos: int) -> (int, int):
     Returns:
         (new_max_size, bytes_consumed): A tuple containing the updated maximum
                                         dynamic table size and the number of bytes consumed.
-    
+
     Raises:
         ValueError: If the instruction does not have the correct prefix or is malformed.
     """

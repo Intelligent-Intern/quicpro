@@ -8,10 +8,12 @@ using a provided event loop.
 import heapq
 import time
 
+
 class TaskScheduler:
     """
     Schedules tasks to run after specified delays using the event loop.
     """
+
     def __init__(self, event_loop) -> None:
         """
         Initialize the scheduler with a given event loop.

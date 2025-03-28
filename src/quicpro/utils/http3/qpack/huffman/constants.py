@@ -90,7 +90,8 @@ HPACK_HUFFMAN_TABLE: List[Tuple[int, int]] = [
 ]
 
 if len(HPACK_HUFFMAN_TABLE) != 256:
-    raise ValueError("Incomplete Huffman table; production code requires 256 entries.")
+    raise ValueError(
+        "Incomplete Huffman table; production code requires 256 entries.")
 
 # Build lookup dictionary mapping each symbol (0–255) to its (code, bit_length)
 HUFFMAN_TABLE = {i: HPACK_HUFFMAN_TABLE[i] for i in range(256)}

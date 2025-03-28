@@ -9,10 +9,12 @@ from quicpro.exceptions import TransmissionError
 
 logger = logging.getLogger(__name__)
 
+
 class UDPSender:
     """
     Sends UDP packets via an underlying network object.
     """
+
     def __init__(self, network: Any, max_retries: int = 3, retry_delay: float = 0.5) -> None:
         self.network = network
         self.max_retries = max_retries
@@ -28,11 +30,13 @@ class UDPSender:
         while attempt <= self.max_retries:
             try:
                 bytes_sent = self.network.transmit(encrypted_packet)
-                logger.info("Sent %d bytes on attempt %d", bytes_sent, attempt + 1)
+                logger.info("Sent %d bytes on attempt %d",
+                            bytes_sent, attempt + 1)
                 return bytes_sent
             except Exception as e:
                 attempt += 1
-                logger.exception("UDPSender failed on attempt %d: %s", attempt, e)
+                logger.exception(
+                    "UDPSender failed on attempt %d: %s", attempt, e)
                 if attempt > self.max_retries:
                     raise TransmissionError(
                         f"Failed after {self.max_retries} attempts: {e}"

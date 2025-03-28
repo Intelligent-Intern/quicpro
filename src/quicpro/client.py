@@ -14,6 +14,7 @@ from quicpro.utils.quic.quic_manager import QuicManager
 from quicpro.utils.http3.connection.http3_connection import HTTP3Connection
 from quicpro.utils.tls.tls_manager import TLSManager
 
+
 class Client:
     def __init__(self, remote_address: Optional[tuple] = None, timeout: float = 1.0,
                  event_loop_max_workers: int = 2, demo_mode: bool = True,
@@ -27,12 +28,16 @@ class Client:
         self.http3_connection = HTTP3Connection(self.quic_manager)
         self.demo_mode = demo_mode
         if self.demo_mode:
-            self.tls_manager = TLSManager("TLSv1.3", certfile="dummy_cert.pem", keyfile="dummy_key.pem", demo=True)
+            self.tls_manager = TLSManager(
+                "TLSv1.3", certfile="dummy_cert.pem", keyfile="dummy_key.pem", demo=True)
         else:
             if not (certfile and keyfile):
-                raise ValueError("In production mode, certfile and keyfile must be provided.")
-            self.tls_manager = TLSManager("TLSv1.3", certfile=certfile, keyfile=keyfile, cafile=cafile, demo=False)
-        self._listener_thread = threading.Thread(target=self._listen_for_response, daemon=True)
+                raise ValueError(
+                    "In production mode, certfile and keyfile must be provided.")
+            self.tls_manager = TLSManager(
+                "TLSv1.3", certfile=certfile, keyfile=keyfile, cafile=cafile, demo=False)
+        self._listener_thread = threading.Thread(
+            target=self._listen_for_response, daemon=True)
         self._listener_thread.start()
 
     def _listen_for_response(self) -> None:
@@ -60,7 +65,8 @@ class Client:
             query = urlencode(params)
             if url_parts.query:
                 query = url_parts.query + "&" + query
-            url = urlunsplit((url_parts.scheme, url_parts.netloc, url_parts.path, query, url_parts.fragment))
+            url = urlunsplit((url_parts.scheme, url_parts.netloc,
+                             url_parts.path, query, url_parts.fragment))
         request_body = f"{method} {url}".encode("utf-8")
         request_body = self.tls_manager.encrypt_data(request_body)
         self.http3_connection.send_request(request_body, **kwargs)

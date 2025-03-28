@@ -19,15 +19,19 @@ from .base import log_tls_debug
 
 logger = logging.getLogger(__name__)
 
+
 class TLSManager:
     def __init__(self, version: str, certfile: str, keyfile: str, cafile: Optional[str] = None, demo: bool = True) -> None:
         if version == "TLSv1.3":
-            self.tls_context: TLSContext = TLS13Context(certfile, keyfile, cafile, demo=demo)
+            self.tls_context: TLSContext = TLS13Context(
+                certfile, keyfile, cafile, demo=demo)
         elif version == "TLSv1.2":
-            self.tls_context: TLSContext = TLS12Context(certfile, keyfile, cafile)
+            self.tls_context: TLSContext = TLS12Context(
+                certfile, keyfile, cafile)
         else:
-            raise ValueError("Unsupported TLS version. Use 'TLSv1.3' or 'TLSv1.2'.")
-        
+            raise ValueError(
+                "Unsupported TLS version. Use 'TLSv1.3' or 'TLSv1.2'.")
+
         if demo:
             from .handshake import perform_tls_handshake
             perform_tls_handshake(self.tls_context, None, "example.com")
@@ -41,15 +45,15 @@ class TLSManager:
         log_tls_debug("Performing TLS handshake via TLSManager")
         from .handshake import perform_tls_handshake
         perform_tls_handshake(self.tls_context, sock, server_hostname)
-    
+
     def encrypt_data(self, data: bytes) -> bytes:
         log_tls_debug("Encrypting data via TLSManager")
         return self.encryption_engine.encrypt(data)
-    
+
     def decrypt_data(self, data: bytes) -> bytes:
         log_tls_debug("Decrypting data via TLSManager")
         return self.decryption_engine.decrypt(data)
-    
+
     def update_keys(self) -> None:
         log_tls_debug("Updating TLS keys via TLSManager")
         self.tls_context.update_keys()

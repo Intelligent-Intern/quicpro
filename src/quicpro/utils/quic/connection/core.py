@@ -10,15 +10,17 @@ from quicpro.exceptions.connection_errors import QuicConnectionError
 
 logger = logging.getLogger(__name__)
 
+
 class Connection:
     """
     Core QUIC Connection implementation.
     Manages connection state, packet transmission, and packet reception.
     """
+
     def __init__(self, connection_id: str, version: str = "1") -> None:
         """
         Initialize a new Connection instance.
-        
+
         Args:
             connection_id (str): Unique identifier for the connection.
             version (str): Protocol version.
@@ -53,10 +55,10 @@ class Connection:
     def send_packet(self, packet: bytes) -> None:
         """
         Send a packet over the connection.
-        
+
         Args:
             packet (bytes): The packet to send.
-            
+
         Raises:
             QuicConnectionError: If the connection is not open.
         """
@@ -69,10 +71,10 @@ class Connection:
     def process_packet(self, packet: bytes) -> None:
         """
         Process an externally received packet by adding it to the received queue.
-        
+
         Args:
             packet (bytes): The received packet.
-            
+
         Raises:
             QuicConnectionError: If the connection is not open.
         """
@@ -89,11 +91,11 @@ class Connection:
         Waits up to 'timeout' seconds for a packet to arrive. In test/simulation mode,
         if no packet is received within the timeout, returns a simulated handshake
         packet (b"HANDSHAKE_DONE") to ensure handshake completion.
-        
+
         Args:
             timeout (float): Maximum time to wait for a packet in seconds.
             **kwargs: Accept any extra keyword arguments.
-            
+
         Returns:
             bytes: The received packet if available; otherwise, simulated handshake packet.
         """
@@ -108,5 +110,6 @@ class Connection:
             time.sleep(0.05)
         # For simulation/testing purposes, return a handshake completion packet.
         simulated = b"HANDSHAKE_DONE"
-        logger.info("No packet received within timeout; simulating packet: %s", simulated)
+        logger.info(
+            "No packet received within timeout; simulating packet: %s", simulated)
         return simulated

@@ -32,6 +32,7 @@ class QuicManager:
     Manages QUIC communications including handshake, packet encoding/decoding,
     stream management, congestion control, and loss recovery.
     """
+
     def __init__(self,
                  connection_id: str,
                  header_fields: dict,
@@ -45,7 +46,8 @@ class QuicManager:
 
         # Start the event loop.
         self.event_loop = SyncEventLoop(max_workers=event_loop_max_workers)
-        self._event_loop_thread = threading.Thread(target=self.event_loop.run_forever, daemon=True)
+        self._event_loop_thread = threading.Thread(
+            target=self.event_loop.run_forever, daemon=True)
         self._event_loop_thread.start()
 
         # Set up QUIC handshake and version negotiation.
@@ -57,7 +59,8 @@ class QuicManager:
         self.rtx_manager = RetransmissionManager(self.congestion_controller)
 
         # Launch a separate thread to process retransmissions.
-        self._retransmission_thread = threading.Thread(target=self._process_retransmissions_loop, daemon=True)
+        self._retransmission_thread = threading.Thread(
+            target=self._process_retransmissions_loop, daemon=True)
         self._retransmission_thread.start()
 
     def _perform_handshake(self, timeout: float) -> None:
@@ -72,8 +75,10 @@ class QuicManager:
             if packet:
                 self.handshake.process_incoming_packet(packet)
             else:
-                self.handshake.send_initial_packet()  # Retransmit if no response.
-        logger.info("QUIC handshake and version negotiation completed successfully.")
+                # Retransmit if no response.
+                self.handshake.send_initial_packet()
+        logger.info(
+            "QUIC handshake and version negotiation completed successfully.")
 
     def send_stream(self, stream_id: int, stream_frame: bytes) -> None:
         """
@@ -86,13 +91,15 @@ class QuicManager:
 
         # Register the packet with the retransmission manager.
         packet_number = self.rtx_manager.add_packet(quic_packet)
-        logger.info("Sending QUIC packet, packet_number=%d, data=%s", packet_number, quic_packet.hex())
+        logger.info("Sending QUIC packet, packet_number=%d, data=%s",
+                    packet_number, quic_packet.hex())
 
         # Use congestion control: allow sending if permitted.
         if self.congestion_controller.can_send(len(quic_packet)):
             self.connection.send_packet(quic_packet)
         else:
-            logger.warning("Congestion window too small; packet queued for later transmission.")
+            logger.warning(
+                "Congestion window too small; packet queued for later transmission.")
 
     def receive_packet(self, packet: bytes) -> None:
         """

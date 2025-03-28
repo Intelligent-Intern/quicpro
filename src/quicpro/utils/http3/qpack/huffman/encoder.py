@@ -9,26 +9,28 @@ padding the final octet with all ones as required by the specification.
 from typing import ByteString
 from .constants import HUFFMAN_TABLE
 
+
 def encode(data: str) -> bytes:
     """
     Encode a string using the QPACK/HPACK Huffman algorithm.
-    
+
     Args:
         data (str): The input string.
-        
+
     Returns:
         bytes: The Huffman encoded bytes.
     """
     bit_buffer = 0
     bit_count = 0
     output = bytearray()
-    
+
     for ch in data:
         symbol = ord(ch)
         try:
             code, nbits = HUFFMAN_TABLE[symbol]
         except KeyError:
-            raise ValueError(f"Symbol {ch} (code {symbol}) not in Huffman table.")
+            raise ValueError(
+                f"Symbol {ch} (code {symbol}) not in Huffman table.")
         bit_buffer = (bit_buffer << nbits) | code
         bit_count += nbits
         while bit_count >= 8:

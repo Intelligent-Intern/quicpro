@@ -18,11 +18,13 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
 # Constants for Cubic algorithm (values chosen for demonstration purposes)
-INITIAL_CWND = 10 * 1460          # Initial congestion window (bytes); assume MSS=1460
+# Initial congestion window (bytes); assume MSS=1460
+INITIAL_CWND = 10 * 1460
 INITIAL_SSTHRESH = float('inf')    # Initial slow-start threshold
 BETA = 0.7                        # Multiplicative decrease factor
 CUBIC_C = 0.4                     # Cubic constant
 MIN_CWND = 2 * 1460               # Minimum congestion window (bytes)
+
 
 class CongestionController:
     """
@@ -30,6 +32,7 @@ class CongestionController:
     Manages the congestion window (cwnd), slow-start threshold (ssthresh),
     and computes adjustments upon receiving ACKs or detecting losses.
     """
+
     def __init__(self, mss: int = 1460):
         self.mss = mss
         self.cwnd = INITIAL_CWND
@@ -38,7 +41,8 @@ class CongestionController:
         self.K = 0.0
         self.origin_point = self.cwnd
         self.lock = threading.Lock()
-        logger.debug(f"CongestionController initialized with cwnd={self.cwnd}, ssthresh={self.ssthresh}")
+        logger.debug(
+            f"CongestionController initialized with cwnd={self.cwnd}, ssthresh={self.ssthresh}")
 
     def _update_cubic(self):
         """
@@ -46,7 +50,8 @@ class CongestionController:
         """
         t = time.time() - self.last_congestion_event_time
         cubic_cwnd = self.origin_point + CUBIC_C * ((t - self.K) ** 3)
-        logger.debug(f"Cubic update: t={t:.3f}, K={self.K:.3f}, cubic_cwnd={cubic_cwnd:.2f}")
+        logger.debug(
+            f"Cubic update: t={t:.3f}, K={self.K:.3f}, cubic_cwnd={cubic_cwnd:.2f}")
         if cubic_cwnd < self.cwnd:
             # In slow start, double cwnd on each RTT.
             self.cwnd = min(self.cwnd * 2, cubic_cwnd)
@@ -68,7 +73,8 @@ class CongestionController:
             else:
                 # Congestion avoidance: cubic growth.
                 self._update_cubic()
-                logger.debug(f"Congestion avoidance: cwnd updated to {self.cwnd}")
+                logger.debug(
+                    f"Congestion avoidance: cwnd updated to {self.cwnd}")
 
     def on_packet_loss(self):
         """
@@ -81,7 +87,8 @@ class CongestionController:
             self.K = ((self.origin_point * (1 - BETA)) / CUBIC_C) ** (1 / 3)
             self.last_congestion_event_time = time.time()
             self.cwnd = new_cwnd
-            logger.debug(f"Packet loss: cwnd reduced to {self.cwnd}, ssthresh set to {self.ssthresh}")
+            logger.debug(
+                f"Packet loss: cwnd reduced to {self.cwnd}, ssthresh set to {self.ssthresh}")
 
     def get_cwnd(self) -> int:
         """
@@ -103,10 +110,12 @@ class RetransmissionManager:
     Integrates with the CongestionController to decide when to retransmit.
     Maintains a mapping of packet numbers to (packet, timestamp, retry_count).
     """
+
     def __init__(self, congestion_controller: CongestionController, max_retries: int = 3):
         self.congestion_controller = congestion_controller
         self.max_retries = max_retries
-        self.pending_packets: Dict[int, Tuple[bytes, float, int]] = {}  # packet_number -> (packet, timestamp, retry_count)
+        # packet_number -> (packet, timestamp, retry_count)
+        self.pending_packets: Dict[int, Tuple[bytes, float, int]] = {}
         self.lock = threading.Lock()
         self.packet_number_counter = 0
         self.retransmit_queue: Deque[int] = deque()
@@ -151,12 +160,15 @@ class RetransmissionManager:
             if packet_number in self.pending_packets:
                 pkt, ts, retry = self.pending_packets[packet_number]
                 if retry < self.max_retries:
-                    self.pending_packets[packet_number] = (pkt, time.time(), retry + 1)
-                    logger.debug(f"Packet {packet_number} timed out; retry count increased to {retry+1}")
+                    self.pending_packets[packet_number] = (
+                        pkt, time.time(), retry + 1)
+                    logger.debug(
+                        f"Packet {packet_number} timed out; retry count increased to {retry+1}")
                     self.congestion_controller.on_packet_loss()
                     self.retransmit_queue.append(packet_number)
                 else:
-                    logger.error(f"Packet {packet_number} exceeded max retries and is dropped")
+                    logger.error(
+                        f"Packet {packet_number} exceeded max retries and is dropped")
                     del self.pending_packets[packet_number]
 
     def get_retransmission_packets(self) -> list:

@@ -8,10 +8,12 @@ import time
 from concurrent.futures import ThreadPoolExecutor
 from .base_loop import BaseEventLoop
 
+
 class SyncEventLoop(BaseEventLoop):
     """
     A simple synchronous event loop that executes tasks using a thread pool.
     """
+
     def __init__(self, max_workers: int = 4) -> None:
         self.executor = ThreadPoolExecutor(max_workers=max_workers)
         self.running = False

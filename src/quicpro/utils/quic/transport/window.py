@@ -4,6 +4,7 @@ window.py - Flow control window management for QUIC transport.
 Implements a simple flow control window mechanism.
 """
 
+
 class FlowControlWindow:
     """
     Manages the flow control window for QUIC transport.
@@ -12,6 +13,7 @@ class FlowControlWindow:
         window_size (int): The maximum number of bytes allowed.
         bytes_consumed (int): The number of bytes already consumed.
     """
+
     def __init__(self, initial_window: int) -> None:
         """
         Initialize the flow control window.

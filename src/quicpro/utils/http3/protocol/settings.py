@@ -11,7 +11,7 @@ from typing import Any, Dict
 class HTTP3Settings:
     """
     Encapsulates HTTP/3 connection settings.
-    
+
     Attributes:
         qpack_max_table_capacity (int): Maximum table capacity for QPACK header compression.
         qpack_blocked_streams (int): Maximum number of blocked streams.
@@ -32,7 +32,7 @@ class HTTP3Settings:
         """
         Encode the settings into bytes.
         This example uses a simple comma-separated key=value format.
-        
+
         Returns:
             bytes: The encoded settings.
         """
@@ -43,20 +43,21 @@ class HTTP3Settings:
             "max_header_list_size": self.max_header_list_size,
         }
         # Encode as key=value pairs separated by commas.
-        settings_str = ",".join(f"{key}={value}" for key, value in sorted(settings.items()))
+        settings_str = ",".join(
+            f"{key}={value}" for key, value in sorted(settings.items()))
         return settings_str.encode("utf-8")
 
     @classmethod
     def decode(cls, data: bytes) -> "HTTP3Settings":
         """
         Decode HTTP/3 settings from bytes.
-        
+
         Args:
             data (bytes): The encoded settings.
-            
+
         Returns:
             HTTP3Settings: The decoded HTTP/3 settings instance.
-            
+
         Raises:
             ValueError: if a settings value cannot be converted to int.
         """
@@ -69,9 +70,11 @@ class HTTP3Settings:
                     try:
                         settings[key.strip()] = int(value.strip())
                     except ValueError as e:
-                        raise ValueError(f"Invalid value for setting '{key}': {value}") from e
+                        raise ValueError(
+                            f"Invalid value for setting '{key}': {value}") from e
         return cls(
-            qpack_max_table_capacity=settings.get("qpack_max_table_capacity", 4096),
+            qpack_max_table_capacity=settings.get(
+                "qpack_max_table_capacity", 4096),
             qpack_blocked_streams=settings.get("qpack_blocked_streams", 100),
             max_header_list_size=settings.get("max_header_list_size", 16384)
         )

@@ -16,7 +16,9 @@ def setup_logging(level=logging.DEBUG):
     if logger.hasHandlers():
         logger.handlers.clear()
     handler = logging.StreamHandler(sys.stdout)
-    formatter = logging.Formatter("%(asctime)s [%(levelname)s] %(name)s: %(message)s")
+    formatter = logging.Formatter(
+        "%(asctime)s [%(levelname)s] %(name)s: %(message)s")
     handler.setFormatter(formatter)
     logger.addHandler(handler)
-    logging.info("Logging is configured with level %s", logging.getLevelName(level))
+    logging.info("Logging is configured with level %s",
+                 logging.getLevelName(level))

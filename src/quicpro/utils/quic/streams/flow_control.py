@@ -5,6 +5,7 @@ This module provides a class to manage the flow control window for an individual
 QUIC stream, tracking the available credit for sending data.
 """
 
+
 class StreamFlowControl:
     """
     Manages the flow control window for a QUIC stream.
@@ -13,6 +14,7 @@ class StreamFlowControl:
         window_size (int): Total credit available for sending data.
         bytes_sent (int): The amount of data already sent.
     """
+
     def __init__(self, initial_window: int) -> None:
         """
         Initialize the flow control window.

@@ -13,13 +13,16 @@ TLS_VERSION_1_3 = "TLSv1.3"
 logger = logging.getLogger(__name__)
 if not logger.handlers:
     handler = logging.StreamHandler()
-    formatter = logging.Formatter("%(asctime)s [%(levelname)s] %(name)s: %(message)s")
+    formatter = logging.Formatter(
+        "%(asctime)s [%(levelname)s] %(name)s: %(message)s")
     handler.setFormatter(formatter)
     logger.addHandler(handler)
 logger.setLevel(logging.DEBUG)
 
+
 def log_tls_debug(message: str) -> None:
     logger.debug(f"[TLS] {message}")
+
 
 def generate_random_bytes(n: int) -> bytes:
     if n <= 0:

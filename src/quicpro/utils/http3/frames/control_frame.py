@@ -5,6 +5,7 @@ Provides a ControlFrame class to represent control messages such as SETTINGS.
 
 from .frame import HTTP3Frame
 
+
 class ControlFrame(HTTP3Frame):
     """
     Represents an HTTP/3 control frame.
@@ -45,7 +46,8 @@ class ControlFrame(HTTP3Frame):
         """
         base_frame = HTTP3Frame.decode(data)
         if base_frame.frame_type != cls.FRAME_TYPE_SETTINGS:
-            raise ValueError("Data does not represent a SETTINGS control frame.")
+            raise ValueError(
+                "Data does not represent a SETTINGS control frame.")
         settings = cls._decode_settings(base_frame.payload)
         return cls(settings)
 

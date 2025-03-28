@@ -7,6 +7,7 @@ as defined by QPACK.
 
 from .varint import encode_integer
 
+
 def encode_dynamic_table_size_update(new_max_size: int) -> bytes:
     """
     Encode a dynamic table size update instruction.

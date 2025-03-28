@@ -17,6 +17,7 @@ If the packet does not match either format, the full packet is returned.
 
 import hashlib
 
+
 def decode_quic_packet(packet: bytes) -> bytes:
     """
     Decode a QUIC packet and extract the stream frame.
@@ -34,7 +35,8 @@ def decode_quic_packet(packet: bytes) -> bytes:
         # Legacy/simulation format handling
         parts = packet.split(b":", 4)
         if len(parts) != 5:
-            raise ValueError("Invalid QUICFRAME packet format; expected 5 parts.")
+            raise ValueError(
+                "Invalid QUICFRAME packet format; expected 5 parts.")
         # parts: [b"QUICFRAME", frame_id, seq_num, total_packets, payload]
         return parts[4].strip()
     if packet.startswith(b'QUIC'):
@@ -45,7 +47,8 @@ def decode_quic_packet(packet: bytes) -> bytes:
         stream_frame = packet[16:]
         expected_length = int.from_bytes(length_bytes, byteorder='big')
         if expected_length != len(stream_frame):
-            raise ValueError("Stream frame length does not match the length field.")
+            raise ValueError(
+                "Stream frame length does not match the length field.")
         expected_checksum = hashlib.sha256(stream_frame).digest()[:8]
         if expected_checksum != checksum:
             raise ValueError("Checksum verification failed.")

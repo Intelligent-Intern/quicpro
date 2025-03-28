@@ -10,6 +10,7 @@ from quicpro.utils.http3.streams.priority import StreamPriority
 
 logger = logging.getLogger(__name__)
 
+
 class Stream:
     def __init__(self, stream_id: int) -> None:
         self.stream_id = stream_id
@@ -27,7 +28,8 @@ class Stream:
 
     def send_data(self, data: bytes) -> None:
         if self.state != "open":
-            raise RuntimeError(f"Stream {self.stream_id} is not open for sending data.")
+            raise RuntimeError(
+                f"Stream {self.stream_id} is not open for sending data.")
         self.buffer += data
         logger.info("Stream %d buffered %d bytes.", self.stream_id, len(data))
 
@@ -37,4 +39,5 @@ class Stream:
                 from quicpro.utils.http3.streams.priority import StreamPriority
                 priority = StreamPriority(priority)
             self.priority = priority
-            logger.info("Stream %d assigned priority weight %s.", self.stream_id, priority.weight)
+            logger.info("Stream %d assigned priority weight %s.",
+                        self.stream_id, priority.weight)

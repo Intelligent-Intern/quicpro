@@ -8,6 +8,7 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+
 class HTTP3Frame:
     """
     Base class for HTTP/3 frames.
@@ -57,7 +58,8 @@ class HTTP3Frame:
         if len(data) < 5 + length:
             raise ValueError("Incomplete frame payload.")
         payload = data[5:5+length]
-        logger.debug("Decoded HTTP3Frame: type=%d, length=%d", frame_type, length)
+        logger.debug("Decoded HTTP3Frame: type=%d, length=%d",
+                     frame_type, length)
         return cls(frame_type, payload)
 
     def __repr__(self) -> str:

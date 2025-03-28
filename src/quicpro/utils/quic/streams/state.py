@@ -6,6 +6,7 @@ This module provides an Enum representing various states of a QUIC stream.
 
 from enum import Enum
 
+
 class StreamState(Enum):
     """Enumeration of possible states for a QUIC stream."""
     IDLE = "idle"

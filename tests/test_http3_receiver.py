@@ -1,3 +1,7 @@
+"""
+Test module for the HTTP3Receiver.
+"""
+
 import unittest
 from quicpro.receiver.http3_receiver import HTTP3Receiver
 from quicpro.exceptions.http3_frame_error import HTTP3FrameError
@@ -14,7 +18,6 @@ class DummyDecoder:
         self.consumer_app = consumer_app
 
     def decode(self, frame: bytes) -> None:
-        # If frame starts with "Frame(" and ends with ")", extract inner content.
         if frame.startswith(b"Frame(") and frame.endswith(b")"):
             self.consumer_app.consume(frame[len(b"Frame("):-1].decode("utf-8"))
         else:
@@ -35,6 +38,7 @@ class TestReceiverPipeline(unittest.TestCase):
             http3_receiver.receive(frame)
         except Exception as e:
             self.fail(f"HTTP3Receiver raised an unexpected error: {e}")
+        self.assertEqual(dummy_consumer.received_message, "TestHeader")
 
     def test_receiver_invalid_frame(self):
         with self.assertRaises(HTTP3FrameError):

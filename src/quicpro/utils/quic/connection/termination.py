@@ -8,6 +8,7 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+
 def terminate_connection(connection, reason: str = "Normal Closure") -> None:
     """
     Terminate the given connection.

@@ -23,7 +23,8 @@ class Response:
         _content (bytes): The raw response content stored as bytes.
         headers (Dict[str, str]): Optional dictionary of HTTP headers.
     """
-    def __init__(self, status_code: int, content: bytes, 
+
+    def __init__(self, status_code: int, content: bytes,
                  headers: Optional[Dict[str, str]] = None) -> None:
         """
         Initialize a new Response instance.
@@ -63,7 +64,7 @@ class Response:
             chunk_size (int): Size in bytes.
         """
         yield from (
-            self._content[i : i + chunk_size]
+            self._content[i: i + chunk_size]
             for i in range(0, len(self._content), chunk_size)
         )
 
@@ -109,13 +110,13 @@ class Response:
             else "Empty"
         )
         return f"<Response {self.status_code}: {summary}>"
+
+
 """
 Module quicpro.response
 This module provides an HTTP Response class along with related helper methods to
 work with HTTP responses in a chunked and incremental manner.
 """
-import codecs
-from typing import Iterator, Optional, Dict
 
 
 class HTTPStatusError(Exception):
@@ -134,7 +135,8 @@ class Response:
         _content (bytes): The raw response content stored as bytes.
         headers (Dict[str, str]): Optional dictionary of HTTP headers.
     """
-    def __init__(self, status_code: int, content: bytes, 
+
+    def __init__(self, status_code: int, content: bytes,
                  headers: Optional[Dict[str, str]] = None) -> None:
         """
         Initialize a new Response instance.
@@ -174,7 +176,7 @@ class Response:
             chunk_size (int): Size in bytes.
         """
         yield from (
-            self._content[i : i + chunk_size]
+            self._content[i: i + chunk_size]
             for i in range(0, len(self._content), chunk_size)
         )
 

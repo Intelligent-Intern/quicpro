@@ -10,6 +10,7 @@ from typing import List, Tuple
 
 logger = logging.getLogger(__name__)
 
+
 def header_field_size(name: str, value: str) -> int:
     """
     Calculate the size of a header field as defined by RFC 9204.
@@ -25,6 +26,7 @@ def header_field_size(name: str, value: str) -> int:
     """
     return len(name.encode("utf-8")) + len(value.encode("utf-8")) + 32
 
+
 class DynamicTable:
     """
     Manages the dynamic table for QPACK header fields.
@@ -32,6 +34,7 @@ class DynamicTable:
     It supports adding new header fields and evicts older entries if necessary
     to maintain the total size within the specified maximum.
     """
+
     def __init__(self, max_size: int = 4096) -> None:
         """
         Initialize the dynamic table.
@@ -60,7 +63,8 @@ class DynamicTable:
             logger.debug("Evicted header [%s: %s] (size: %d) from dynamic table",
                          evicted_name, evicted_value, evicted_size)
         if required_space > self.max_size:
-            raise RuntimeError("Header field size exceeds maximum dynamic table size.")
+            raise RuntimeError(
+                "Header field size exceeds maximum dynamic table size.")
 
     def add(self, name: str, value: str) -> None:
         """

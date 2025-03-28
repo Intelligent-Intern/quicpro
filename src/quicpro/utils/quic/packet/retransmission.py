@@ -6,13 +6,16 @@ packet IDs to (packet, retry_count) tuples, and provides methods to add packets,
 mark them as acknowledged, and retrieve packets for retransmission.
 """
 
+
 class RetransmissionManager:
     """
     Manages retransmission for lost QUIC packets.
     """
+
     def __init__(self) -> None:
         """Initialize an empty retransmission queue."""
-        self.pending_packets = {}  # Mapping: packet_id -> (packet, retry_count)
+        self.pending_packets = {
+        }  # Mapping: packet_id -> (packet, retry_count)
 
     def add_packet(self, packet_id: int, packet: bytes) -> None:
         """

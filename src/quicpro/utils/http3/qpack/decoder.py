@@ -26,18 +26,20 @@ from .literal_decoder import decode_literal
 
 logger = logging.getLogger(__name__)
 
+
 def _calculate_checksum(data: bytes) -> str:
     """
     Calculate the SHA-256 checksum of the given data as a hexadecimal string.
-    
+
     Args:
         data (bytes): Data for which to compute the checksum.
-    
+
     Returns:
         str: The hexadecimal checksum.
     """
     import hashlib
     return hashlib.sha256(data).hexdigest()
+
 
 class QPACKDecoder:
     """
@@ -97,7 +99,8 @@ class QPACKDecoder:
                 continue
             # Indexed header field representation (high bit set).
             if current_byte & 0x80:
-                index, n = decode_integer(bytes([current_byte & 0x7F]) + block[pos+1:], 6)
+                index, n = decode_integer(
+                    bytes([current_byte & 0x7F]) + block[pos+1:], 6)
                 pos += n
                 if index <= len(STATIC_TABLE):
                     name, value = STATIC_TABLE[index - 1]
@@ -112,7 +115,8 @@ class QPACKDecoder:
                         logger.debug("Decoded dynamic indexed header [%s: %s] (index=%d)",
                                      name, value, index)
                     else:
-                        raise ValueError(f"Invalid index {index} in QPACK decoding.")
+                        raise ValueError(
+                            f"Invalid index {index} in QPACK decoding.")
             else:
                 # Literal header field.
                 literal, n = decode_literal(block, pos)

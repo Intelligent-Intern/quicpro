@@ -5,6 +5,7 @@ This module decodes binary data into transport parameters.
 It expects a comma-separated key=value string.
 """
 
+
 def decode_transport_parameters(data: bytes) -> dict:
     """
     Decode transport parameters from bytes.

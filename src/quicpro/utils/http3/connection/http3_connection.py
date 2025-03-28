@@ -28,6 +28,7 @@ from quicpro.utils.http3.qpack.encoder import QPACKEncoder
 
 logger = logging.getLogger(__name__)
 
+
 class HTTP3Connection:
     def __init__(self, quic_manager: QuicManager) -> None:
         self.quic_manager = quic_manager
@@ -44,7 +45,8 @@ class HTTP3Connection:
     def send_request(self, request_body: bytes, *, priority: Optional[StreamPriority] = None,
                      stream_id: Optional[int] = None) -> None:
         if stream_id is not None:
-            stream = self.stream_manager.create_stream(stream_id, priority=priority)
+            stream = self.stream_manager.create_stream(
+                stream_id, priority=priority)
         else:
             stream = self.stream_manager.create_stream(priority=priority)
         qpack_encoder = QPACKEncoder(simulate=True)
@@ -57,7 +59,8 @@ class HTTP3Connection:
         encoded_headers = qpack_encoder.encode(headers)
         combined_frame = encoded_headers + request_body
         quic_packet = encode_quic_packet(combined_frame)
-        logger.info("Sending HTTP/3 packet on stream %d: %s", stream.stream_id, quic_packet.hex())
+        logger.info("Sending HTTP/3 packet on stream %d: %s",
+                    stream.stream_id, quic_packet.hex())
         conn = getattr(self.quic_manager, "connection", self.quic_manager)
         conn.send_packet(quic_packet)
 
@@ -70,7 +73,8 @@ class HTTP3Connection:
             return
         stream = self.stream_manager.get_stream(stream_id)
         if stream is None:
-            logger.info("Stream ID %d not found; creating a new stream.", stream_id)
+            logger.info(
+                "Stream ID %d not found; creating a new stream.", stream_id)
             stream = self.stream_manager.create_stream(stream_id)
         stream.send_data(packet[1:])
         logger.info("Routed incoming frame to stream %d", stream.stream_id)

@@ -8,6 +8,7 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+
 def migrate_connection(connection, new_peer_address: tuple) -> None:
     """
     Update the connection with a new peer address.

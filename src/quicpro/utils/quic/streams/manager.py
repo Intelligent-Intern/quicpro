@@ -8,10 +8,12 @@ for handling multiple streams.
 from typing import Optional
 from .state import StreamState
 
+
 class Stream:
     """
     Represents an individual QUIC stream with state and buffering.
     """
+
     def __init__(self, stream_id: int) -> None:
         """Initialize a Stream with a unique stream identifier."""
         self.stream_id = stream_id
@@ -29,10 +31,10 @@ class Stream:
     def send_data(self, data: bytes) -> None:
         """
         Append data to the stream buffer.
-        
+
         Args:
             data (bytes): The data to send.
-            
+
         Raises:
             ValueError: If the stream is not open for sending data.
         """
@@ -40,10 +42,12 @@ class Stream:
             raise ValueError("Stream is not open for sending data.")
         self.buffer += data
 
+
 class StreamManager:
     """
     Manages multiple QUIC streams.
     """
+
     def __init__(self) -> None:
         """Initialize an empty stream manager."""
         self.streams = {}
@@ -71,10 +75,10 @@ class StreamManager:
     def get_stream(self, stream_id: int) -> Optional[Stream]:
         """
         Retrieve a stream by its identifier.
-        
+
         Args:
             stream_id (int): The stream identifier.
-        
+
         Returns:
             Optional[Stream]: The stream if found; otherwise, None.
         """
@@ -83,7 +87,7 @@ class StreamManager:
     def close_stream(self, stream_id: int) -> None:
         """
         Close the stream with the specified identifier.
-        
+
         Args:
             stream_id (int): The stream identifier.
         """

@@ -1,6 +1,7 @@
 import time
 from quicpro.utils.event_loop.thread_pool import ThreadPool
 
+
 def test_thread_pool():
     task_executed = False
 
@@ -14,6 +15,7 @@ def test_thread_pool():
     future.result(timeout=1)
     pool.shutdown()
     assert task_executed, "ThreadPool did not execute sample_task"
+
 
 if __name__ == "__main__":
     test_thread_pool()

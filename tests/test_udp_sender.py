@@ -1,3 +1,7 @@
+"""
+Test module for UDPSender functionality.
+"""
+
 import unittest
 import time
 from quicpro.sender.udp_sender import UDPSender
@@ -9,19 +13,16 @@ class DummyNetwork:
         self.bytes_to_send = bytes_to_send
         self.attempts = 0
         self.closed = False
-
     def transmit(self, packet: bytes) -> int:
         self.attempts += 1
         return self.bytes_to_send
-
     def close(self):
         self.closed = True
 
 class FailingNetwork:
-    """A network that always fails."""
+    """A network that always fails to transmit packets."""
     def __init__(self):
         self.attempts = 0
-
     def transmit(self, packet: bytes) -> int:
         self.attempts += 1
         raise Exception("Transmission failed")
@@ -32,7 +33,6 @@ class FlakyNetwork:
         self.fail_times = fail_times
         self.bytes_to_send = bytes_to_send
         self.attempts = 0
-
     def transmit(self, packet: bytes) -> int:
         self.attempts += 1
         if self.attempts <= self.fail_times:
@@ -40,6 +40,7 @@ class FlakyNetwork:
         return self.bytes_to_send
 
 class TestUDPSender(unittest.TestCase):
+    """Test cases for the UDPSender."""
     def test_successful_send(self):
         """Test that UDPSender sends the packet successfully on the first attempt."""
         network = DummyNetwork(bytes_to_send=20)
@@ -54,7 +55,6 @@ class TestUDPSender(unittest.TestCase):
         sender = UDPSender(network=network, max_retries=3, retry_delay=0.1)
         bytes_sent = sender.send(b"dummy packet")
         self.assertEqual(bytes_sent, 15)
-        # 2 failures + 1 success = 3 attempts in total.
         self.assertEqual(network.attempts, 3)
 
     def test_retry_failure(self):
@@ -63,11 +63,10 @@ class TestUDPSender(unittest.TestCase):
         sender = UDPSender(network=network, max_retries=2, retry_delay=0.1)
         with self.assertRaises(TransmissionError):
             sender.send(b"dummy packet")
-        # max_retries (2) + 1 = 3 attempts in total.
         self.assertEqual(network.attempts, 3)
 
     def test_context_manager(self):
-        """Test that the UDPSender context manager calls network.close() upon exit."""
+        """Test that UDPSender context manager calls network.close() upon exit."""
         network = DummyNetwork()
         sender = UDPSender(network=network)
         with sender as s:

@@ -7,6 +7,7 @@ from typing import Optional, Dict, Iterator
 from quicpro.utils.http3.streams.stream import Stream
 from quicpro.utils.http3.streams.priority import StreamPriority
 
+
 class StreamManager:
     def __init__(self) -> None:
         self._streams: Dict[int, Stream] = {}

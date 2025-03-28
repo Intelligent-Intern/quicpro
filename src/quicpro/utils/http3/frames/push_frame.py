@@ -6,6 +6,7 @@ Defines a PushFrame class used for server push.
 from .frame import HTTP3Frame
 import struct
 
+
 class PushFrame(HTTP3Frame):
     """
     Represents an HTTP/3 push frame used for server push.
@@ -41,7 +42,8 @@ class PushFrame(HTTP3Frame):
         if base_frame.frame_type != cls.FRAME_TYPE_PUSH:
             raise ValueError("Data does not represent a PUSH frame.")
         if len(base_frame.payload) < 4:
-            raise ValueError("Push frame payload too short; missing promised stream ID.")
+            raise ValueError(
+                "Push frame payload too short; missing promised stream ID.")
         promised_stream_id = struct.unpack("!I", base_frame.payload[:4])[0]
         push_payload = base_frame.payload[4:]
         return cls(promised_stream_id, push_payload)

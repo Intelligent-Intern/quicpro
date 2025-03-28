@@ -8,6 +8,7 @@ It also validates that any leftover bits in the final byte are all ones (as requ
 from typing import Dict, Any, List
 from .constants import HUFFMAN_TABLE
 
+
 def build_decoding_tree() -> Dict[int, Any]:
     """
     Build a binary decoding tree from the Huffman table.
@@ -26,22 +27,24 @@ def build_decoding_tree() -> Dict[int, Any]:
         current["symbol"] = symbol
     return root
 
+
 _DECODING_TREE = build_decoding_tree()
+
 
 def decode(data: bytes) -> str:
     """
     Decode Huffman encoded bytes using the decoding tree.
-    
+
     This implementation first creates a complete bitstring from the input data,
     then processes bits one-by-one. It also tracks the position of the last complete symbol.
     Any leftover bits (the padding) are verified to consist entirely of ones.
-    
+
     Args:
         data (bytes): The Huffman encoded data.
-        
+
     Returns:
         str: The decoded string.
-        
+
     Raises:
         ValueError: If the encoding is invalid or padding is incorrect.
     """
@@ -57,7 +60,8 @@ def decode(data: bytes) -> str:
         bit = int(bit_str[ptr])
         ptr += 1
         if bit not in node:
-            raise ValueError(f"Invalid Huffman encoding; no branch for bit at position {ptr}.")
+            raise ValueError(
+                f"Invalid Huffman encoding; no branch for bit at position {ptr}.")
         node = node[bit]
         if "symbol" in node:
             result_chars.append(chr(node["symbol"]))
@@ -68,5 +72,6 @@ def decode(data: bytes) -> str:
     if ptr != last_complete_ptr:
         leftover = bit_str[last_complete_ptr:ptr]
         if any(bit != '1' for bit in leftover):
-            raise ValueError(f"Invalid Huffman padding bits; expected all ones, got {leftover}.")
+            raise ValueError(
+                f"Invalid Huffman padding bits; expected all ones, got {leftover}.")
     return "".join(result_chars)

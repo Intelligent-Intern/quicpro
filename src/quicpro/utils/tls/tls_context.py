@@ -6,6 +6,7 @@ and key updates.
 """
 from abc import ABC, abstractmethod
 
+
 class TLSContext(ABC):
     """
     Abstract Base Class for TLS contexts.

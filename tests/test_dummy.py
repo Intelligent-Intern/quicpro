@@ -1,3 +1,7 @@
+"""
+Test module for dummy tests.
+"""
+
 import unittest
 
 class TestDummy(unittest.TestCase):

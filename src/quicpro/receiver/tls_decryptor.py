@@ -16,6 +16,7 @@ from quicpro.exceptions.decryption_error import DecryptionError
 
 logger = logging.getLogger(__name__)
 
+
 class TLSDecryptor:
     def __init__(self, quic_receiver: Any, config: TLSConfig, demo: bool = True, dtls_context: Optional[Any] = None) -> None:
         self.quic_receiver = quic_receiver
@@ -26,7 +27,8 @@ class TLSDecryptor:
             self.aesgcm = AESGCM(self.config.key)
         else:
             if self.dtls_context is None:
-                raise DecryptionError("Real TLS decryption mode requires a DTLS/TLS context.")
+                raise DecryptionError(
+                    "Real TLS decryption mode requires a DTLS/TLS context.")
             logger.info("Real TLS decryption mode activated.")
 
     def _compute_nonce(self, seq_number: int) -> bytes:
@@ -38,11 +40,13 @@ class TLSDecryptor:
             try:
                 if len(encrypted_packet) < 9:
                     raise ValueError("Encrypted packet is too short.")
-                seq_number = int.from_bytes(encrypted_packet[:8], byteorder="big")
+                seq_number = int.from_bytes(
+                    encrypted_packet[:8], byteorder="big")
                 ciphertext = encrypted_packet[8:]
                 nonce = self._compute_nonce(seq_number)
                 quic_packet = self.aesgcm.decrypt(nonce, ciphertext, None)
-                logger.info("Decrypted packet with sequence number %d", seq_number)
+                logger.info(
+                    "Decrypted packet with sequence number %d", seq_number)
                 self.quic_receiver.receive(quic_packet)
             except Exception as e:
                 logger.exception("TLSDecryptor demo decryption failed: %s", e)

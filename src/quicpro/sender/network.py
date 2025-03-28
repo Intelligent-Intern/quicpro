@@ -8,10 +8,12 @@ from typing import Tuple
 
 logger = logging.getLogger(__name__)
 
+
 class Network:
     """
     Handles network operations for sending UDP datagrams.
     """
+
     def __init__(self, remote_address: Tuple[str, int], timeout: float = 5.0) -> None:
         self.remote_address = remote_address
         self.timeout = timeout
@@ -22,7 +24,8 @@ class Network:
         try:
             sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
             sock.settimeout(self.timeout)
-            logger.info("UDP socket created with timeout %s seconds", self.timeout)
+            logger.info(
+                "UDP socket created with timeout %s seconds", self.timeout)
             return sock
         except Exception as exc:
             logger.exception("Failed to create UDP socket: %s", exc)
@@ -34,7 +37,8 @@ class Network:
         """
         try:
             bytes_sent = self.socket.sendto(data, self.remote_address)
-            logger.info("Transmitted %d bytes to %s", bytes_sent, self.remote_address)
+            logger.info("Transmitted %d bytes to %s",
+                        bytes_sent, self.remote_address)
             return bytes_sent
         except Exception as exc:
             logger.exception("Network transmission failed: %s", exc)

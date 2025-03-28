@@ -12,6 +12,7 @@ def perform_handshake(connection, _client_initial_data: bytes) -> bool:
     """
     Perform handshake to establish a QUIC connection.
     """
-    logger.info("Performing handshake for connection %s", connection.connection_id)
+    logger.info("Performing handshake for connection %s",
+                connection.connection_id)
     connection.open()
     return True

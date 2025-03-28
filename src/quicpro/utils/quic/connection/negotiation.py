@@ -5,6 +5,7 @@ This module defines a function to negotiate a common protocol version between
 a local endpoint and a peer.
 """
 
+
 def negotiate_version(local_version: str, peer_versions: list) -> str:
     """
     Negotiate the protocol version based on local and peer supported versions.

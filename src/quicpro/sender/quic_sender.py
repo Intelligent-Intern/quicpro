@@ -9,10 +9,12 @@ from quicpro.utils.quic.packet.encoder import encode_quic_packet
 
 logger = logging.getLogger(__name__)
 
+
 class QUICSender:
     """
     Encapsulates an HTTP/3 stream frame into a QUIC packet.
     """
+
     def __init__(self, tls_encryptor: Any) -> None:
         self.tls_encryptor = tls_encryptor
 

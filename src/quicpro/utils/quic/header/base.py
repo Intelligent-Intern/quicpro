@@ -4,6 +4,7 @@ base.py - Low-level utilities for QUIC header operations.
 This module provides functions for variable-length integer encoding and decoding.
 """
 
+
 def encode_varint(value: int) -> bytes:
     """Encode an integer using QUIC's variable-length integer encoding rules."""
     if value < 0x40:
@@ -15,6 +16,7 @@ def encode_varint(value: int) -> bytes:
     if value < 0x4000000000000000:
         return (value | 0xC000000000000000).to_bytes(8, 'big')
     raise ValueError("Integer value too large for QUIC varint encoding.")
+
 
 def decode_varint(data: bytes) -> (int, int):
     """Decode a varint from the given data.

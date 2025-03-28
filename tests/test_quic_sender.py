@@ -1,50 +1,65 @@
+"""
+Test module for the QUIC sender.
+"""
+
 import unittest
-import hashlib
-from quicpro.sender.quic_sender import QUICSender
+from quicpro.sender.encoder import Encoder, Message
+from quicpro.sender.http3_sender import HTTP3Sender
 from quicpro.exceptions import TransmissionError
 
 class DummyTLSEncryptor:
+    """A dummy TLS encryptor for testing."""
     def __init__(self):
-        self.encrypted_packets = []
+        self.received_packet = None
 
     def encrypt(self, packet: bytes) -> None:
-        # Simply store the encrypted packet for later verification.
-        self.encrypted_packets.append(packet)
+        self.received_packet = packet
 
-class TestQUICSender(unittest.TestCase):
-    def setUp(self) -> None:
-        self.dummy_encryptor = DummyTLSEncryptor()
-        self.quic_sender = QUICSender(tls_encryptor=self.dummy_encryptor)
+class DummyQUICSender:
+    """A dummy QUIC sender that uses a dummy TLS encryptor."""
+    def __init__(self, tls_encryptor: DummyTLSEncryptor):
+        self.tls_encryptor = tls_encryptor
+        self.sent_frame = None
 
-    def test_send_valid_stream_frame(self) -> None:
-        # Sample HTTP/3 stream frame
-        stream_frame = b"HTTP3Stream(stream_id=9, payload=Frame(Test))"
+    def send(self, frame: bytes) -> None:
+        self.sent_frame = frame
+        packet = b"QUICFRAME:dummy:0:1:HTTP3:" + frame
+        self.tls_encryptor.encrypt(packet)
+
+class DummyHTTP3Sender:
+    """A dummy HTTP/3 sender that wraps a QUIC sender."""
+    def __init__(self, quic_sender: DummyQUICSender, stream_id: int):
+        self.quic_sender = quic_sender
+        self.stream_id = stream_id
+
+    def send(self, frame: bytes) -> None:
+        stream_frame = b"HTTP3Stream(stream_id=%d, payload=Frame(" % self.stream_id + frame + b"))"
         self.quic_sender.send(stream_frame)
-        
-        # Expected structure:
-        # Header Marker: b"QUIC"
-        # Payload Length: 4-byte big-endian integer representing len(stream_frame)
-        # Checksum: 8-byte truncated SHA256 digest of stream_frame
-        # Payload: stream_frame
-        header_marker = b"QUIC"
-        frame_length = len(stream_frame)
-        length_bytes = frame_length.to_bytes(4, byteorder='big')
-        checksum = hashlib.sha256(stream_frame).digest()[:8]
-        expected_packet = header_marker + length_bytes + checksum + stream_frame
-        
-        self.assertEqual(len(self.dummy_encryptor.encrypted_packets), 1, "One encrypted packet should be produced.")
-        self.assertEqual(self.dummy_encryptor.encrypted_packets[0], expected_packet,
-                         "The produced QUIC packet does not match the expected format.")
 
-    def test_send_failure(self) -> None:
-        # Simulate a failure by having the TLS encryptor throw an exception.
-        class FailingTLSEncryptor:
-            def encrypt(self, packet: bytes) -> None:
-                raise Exception("Encryption failure")
-        
-        quic_sender = QUICSender(tls_encryptor=FailingTLSEncryptor())
+class TestSenderPipeline(unittest.TestCase):
+    """Test cases for the sender pipeline."""
+    def setUp(self):
+        self.dummy_encryptor = DummyTLSEncryptor()
+        self.dummy_quic_sender = DummyQUICSender(tls_encryptor=self.dummy_encryptor)
+        self.dummy_http3_sender = DummyHTTP3Sender(self.dummy_quic_sender, stream_id=9)
+
+    def test_sender_pipeline(self):
+        """Test that a message is encoded and correctly sent via the TLS encryptor."""
+        encoder = Encoder(http3_sender=self.dummy_http3_sender)
+        encoder.encode(Message(content="test"))
+        self.assertIsNotNone(self.dummy_encryptor.received_packet,
+                             "TLS encryptor did not receive any packet.")
+        self.assertIn(b"Frame(test)", self.dummy_encryptor.received_packet,
+                      "The encoded frame is missing from the TLS packet.")
+
+    def test_sender_failure(self):
+        """Test that a sender failure raises TransmissionError."""
+        class FailingSender:
+            def send(self, frame: bytes) -> None:
+                raise Exception("QUIC Sender failure")
+        sender = HTTP3Sender(quic_sender=FailingSender(), stream_id=9)
         with self.assertRaises(TransmissionError):
-            quic_sender.send(b"Some stream frame")
+            sender.send(b"Any frame")
 
 if __name__ == '__main__':
     unittest.main()

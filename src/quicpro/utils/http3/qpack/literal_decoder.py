@@ -10,6 +10,7 @@ from typing import Tuple
 from .varint import decode_integer
 from .huffman import huffman_decode
 
+
 def decode_literal(data: bytes, pos: int) -> Tuple[Tuple[str, str], int]:
     """
     Decode a literal header field starting at the given position.
@@ -28,7 +29,7 @@ def decode_literal(data: bytes, pos: int) -> Tuple[Tuple[str, str], int]:
     Returns:
         ((name, value), bytes_consumed): A tuple with the decoded header field and
                                           the number of bytes consumed.
-    
+
     Raises:
         ValueError: If the data is incomplete or malformed.
     """

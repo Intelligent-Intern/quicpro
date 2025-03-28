@@ -12,6 +12,8 @@ from typing import List, Optional
 logger = logging.getLogger(__name__)
 
 # Define handshake states
+
+
 class HandshakeState(Enum):
     INITIAL = 1
     VERSION_NEGOTIATION = 2
@@ -19,8 +21,10 @@ class HandshakeState(Enum):
     ONE_RTT = 4
     COMPLETED = 5
 
+
 # Sample constant for version negotiation packet header marker.
 VERSION_NEGOTIATION_MARKER = b"VERNEG"
+
 
 def negotiate_version(local_version: str, peer_versions: List[str]) -> str:
     """
@@ -32,6 +36,7 @@ def negotiate_version(local_version: str, peer_versions: List[str]) -> str:
     if common:
         return common[0]
     raise ValueError("No common QUIC version found.")
+
 
 class QUICHandshake:
     """
@@ -73,8 +78,10 @@ class QUICHandshake:
             if packet.startswith(VERSION_NEGOTIATION_MARKER):
                 self.state = HandshakeState.VERSION_NEGOTIATION
                 peer_versions = self._extract_peer_versions(packet)
-                logger.debug("Received Version Negotiation packet, peer_versions: %s", peer_versions)
-                negotiated = negotiate_version(self.local_version, peer_versions)
+                logger.debug(
+                    "Received Version Negotiation packet, peer_versions: %s", peer_versions)
+                negotiated = negotiate_version(
+                    self.local_version, peer_versions)
                 self.negotiated_version = negotiated
                 logger.info("Negotiated QUIC version: %s", negotiated)
                 # After negotiation, re-send Initial packet with updated version.
@@ -103,7 +110,8 @@ class QUICHandshake:
         # Simulate key derivation complete after receiving a handshake message.
         if b"HANDSHAKE_DONE" in packet:
             self.state = HandshakeState.ONE_RTT
-            logger.info("Handshake phase completed; transitioning to 1‑RTT phase")
+            logger.info(
+                "Handshake phase completed; transitioning to 1‑RTT phase")
             self._send_1rtt_packet()
 
     def _send_1rtt_packet(self) -> None:
@@ -120,8 +128,10 @@ class QUICHandshake:
         Assumes versions are comma-separated after the VERSION_NEGOTIATION_MARKER.
         """
         try:
-            versions_str = packet[len(VERSION_NEGOTIATION_MARKER):].decode("ascii")
-            versions = [v.strip() for v in versions_str.split(",") if v.strip()]
+            versions_str = packet[len(
+                VERSION_NEGOTIATION_MARKER):].decode("ascii")
+            versions = [v.strip()
+                        for v in versions_str.split(",") if v.strip()]
             return versions
         except Exception as e:
             logger.exception("Failed to extract peer versions")
@@ -149,6 +159,7 @@ class QUICHandshake:
                 self.process_incoming_packet(packet)
             else:
                 # Retransmit initial packet if no response in a certain interval.
-                logger.debug("No packet received, retransmitting initial packet")
+                logger.debug(
+                    "No packet received, retransmitting initial packet")
                 self.send_initial_packet()
         logger.info("QUIC handshake completed successfully.")

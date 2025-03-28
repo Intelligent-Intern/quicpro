@@ -4,10 +4,12 @@ This module provides a simple abstraction over ThreadPoolExecutor.
 """
 from concurrent.futures import ThreadPoolExecutor
 
+
 class ThreadPool:
     """
     A wrapper around ThreadPoolExecutor for submitting tasks.
     """
+
     def __init__(self, max_workers: int = 4) -> None:
         """
         Initialize the ThreadPool.

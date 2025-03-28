@@ -11,6 +11,7 @@ from quicpro.exceptions import TransmissionError
 
 logger = logging.getLogger(__name__)
 
+
 class HTTP3Sender:
     def __init__(self, quic_sender: object, stream_id: int) -> None:
         """
@@ -27,7 +28,8 @@ class HTTP3Sender:
     def send(self, frame: bytes) -> None:
         try:
             stream_frame = b"HTTP3Stream(stream_id=%d, payload=Frame(" % self.stream_id + frame + b"))"
-            logger.info("HTTP3Sender created stream frame for stream %d", self.stream_id)
+            logger.info(
+                "HTTP3Sender created stream frame for stream %d", self.stream_id)
             self.quic_sender.send(stream_frame)
         except Exception as exc:
             logger.exception("HTTP3Sender mapping failed: %s", exc)

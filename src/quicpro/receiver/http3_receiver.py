@@ -13,6 +13,7 @@ from quicpro.exceptions import HTTP3FrameError
 
 logger = logging.getLogger(__name__)
 
+
 class HTTP3Receiver:
     def __init__(self, decoder: object) -> None:
         """
@@ -24,10 +25,12 @@ class HTTP3Receiver:
 
     def receive(self, quic_packet: bytes) -> None:
         try:
-            logger.debug("HTTP3Receiver received packet of length %d", len(quic_packet))
+            logger.debug(
+                "HTTP3Receiver received packet of length %d", len(quic_packet))
             frame = self._extract_http3_frame(quic_packet)
             if not self._validate_frame(frame):
-                raise HTTP3FrameError("Extracted HTTP/3 frame failed validation.")
+                raise HTTP3FrameError(
+                    "Extracted HTTP/3 frame failed validation.")
             logger.info("HTTP3Receiver successfully decoded frame")
             if hasattr(self, "_decode_frame"):
                 header_block, _ = self._decode_frame(frame)

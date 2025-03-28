@@ -20,12 +20,14 @@ class UDPReceiver:
     """
     A UDPReceiver that listens for UDP packets and processes them concurrently.
     """
+
     def __init__(
         self,
         bind_address: Tuple[str, int],
         *,
         tls_decryptor: Optional[Any] = None,
-        packet_handler: Optional[Callable[[bytes, Tuple[str, int]], None]] = None,
+        packet_handler: Optional[Callable[[
+            bytes, Tuple[str, int]], None]] = None,
         buffer_size: int = 4096,
         max_rebind_attempts: int = 3,
         rebind_backoff: float = 1.0,
@@ -43,11 +45,13 @@ class UDPReceiver:
                               "lock": threading.Lock()}
         self.tls_decryptor = tls_decryptor
         if packet_handler is None and tls_decryptor is not None:
-            self.packet_handler = lambda data, addr: tls_decryptor.decrypt(data)
+            self.packet_handler = lambda data, addr: tls_decryptor.decrypt(
+                data)
         elif packet_handler is not None:
             self.packet_handler = packet_handler
         else:
-            raise ValueError("Either 'packet_handler' or 'tls_decryptor' must be provided.")
+            raise ValueError(
+                "Either 'packet_handler' or 'tls_decryptor' must be provided.")
 
     def __enter__(self) -> "UDPReceiver":
         """Enter the runtime context, starting the receiver."""
@@ -80,7 +84,8 @@ class UDPReceiver:
                 return
             self._state["running"] = True
             self._create_and_bind_socket()
-            self._state["thread"] = threading.Thread(target=self._event_loop, daemon=True)
+            self._state["thread"] = threading.Thread(
+                target=self._event_loop, daemon=True)
             self._state["thread"].start()
             logger.info("UDPReceiver started.")
 
@@ -93,27 +98,32 @@ class UDPReceiver:
                     if mask & selectors.EVENT_READ:
                         try:
                             assert self._state["socket"] is not None
-                            data, addr = self._state["socket"].recvfrom(self.config["buffer_size"])
+                            data, addr = self._state["socket"].recvfrom(
+                                self.config["buffer_size"])
                         except BlockingIOError:
                             continue
                         except Exception as e:
                             logger.exception("Error receiving data: %s", e)
                             raise e
-                        self._thread_state["executor"].submit(self._handle_packet, data, addr)
+                        self._thread_state["executor"].submit(
+                            self._handle_packet, data, addr)
             except Exception as e:
                 logger.exception("Event loop encountered error: %s", e)
                 rebind_attempts += 1
                 if rebind_attempts > self.config["max_rebind_attempts"]:
-                    logger.error("Max rebind attempts exceeded; stopping UDPReceiver.")
+                    logger.error(
+                        "Max rebind attempts exceeded; stopping UDPReceiver.")
                     self.stop()
                 else:
-                    logger.info("Rebinding socket (attempt %d)", rebind_attempts)
+                    logger.info("Rebinding socket (attempt %d)",
+                                rebind_attempts)
                     time.sleep(self.config["rebind_backoff"] * rebind_attempts)
                     try:
                         self._create_and_bind_socket()
                         rebind_attempts = 0
                     except Exception as bind_error:
-                        logger.exception("Failed to rebind socket: %s", bind_error)
+                        logger.exception(
+                            "Failed to rebind socket: %s", bind_error)
             time.sleep(0.01)
         logger.info("Event loop terminated.")
 

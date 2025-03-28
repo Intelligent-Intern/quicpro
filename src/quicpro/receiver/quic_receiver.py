@@ -21,6 +21,7 @@ class QUICReceiver:
     Receives and reassembles QUIC packets, delegating the extracted HTTP/3 frame
     to an HTTP3Receiver instance.
     """
+
     def __init__(self, http3_receiver: Any) -> None:
         """
         Initialize the QUICReceiver.

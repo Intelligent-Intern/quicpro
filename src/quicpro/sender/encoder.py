@@ -12,6 +12,7 @@ from typing import Any
 
 logger = logging.getLogger(__name__)
 
+
 class Encoder:
     def __init__(self, http3_sender: Any) -> None:
         self.http3_sender = http3_sender

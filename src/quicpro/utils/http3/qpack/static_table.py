@@ -109,4 +109,5 @@ STATIC_TABLE = [
 ]
 
 if len(STATIC_TABLE) != 99:
-    raise RuntimeError(f"Static table incomplete; expected 99 entries but got {len(STATIC_TABLE)}.")
+    raise RuntimeError(
+        f"Static table incomplete; expected 99 entries but got {len(STATIC_TABLE)}.")

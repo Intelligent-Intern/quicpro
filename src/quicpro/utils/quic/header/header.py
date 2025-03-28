@@ -8,6 +8,7 @@ validation, encoding, and decoding functionalities.
 from .base import encode_varint, decode_varint
 from .definitions import DEFAULT_HEADER
 
+
 class Header:
     """
     Header class for QUIC protocol.
@@ -15,6 +16,7 @@ class Header:
     This class encapsulates header fields and provides methods for validating,
     encoding, and decoding the header.
     """
+
     def __init__(self, **fields):
         """
         Initialize the header with default values and update with provided fields.
@@ -40,7 +42,8 @@ class Header:
         Returns:
             bytes: The encoded header.
         """
-        payload = ";".join(f"{k}={self.fields[k]}" for k in sorted(self.fields))
+        payload = ";".join(
+            f"{k}={self.fields[k]}" for k in sorted(self.fields))
         payload_bytes = payload.encode("utf-8")
         length_bytes = encode_varint(len(payload_bytes))
         return length_bytes + payload_bytes

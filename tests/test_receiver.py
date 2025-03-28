@@ -2,11 +2,14 @@ import unittest
 from quicpro.receiver.http3_receiver import HTTP3Receiver
 from quicpro.exceptions.http3_frame_error import HTTP3FrameError
 
+
 class DummyConsumerApp:
     def __init__(self):
         self.received_message = None
+
     def consume(self, message: str) -> None:
         self.received_message = message
+
 
 class TestReceiverPipeline(unittest.TestCase):
     def test_receiver_pipeline(self):
@@ -27,6 +30,7 @@ class TestReceiverPipeline(unittest.TestCase):
         with self.assertRaises(HTTP3FrameError):
             http3_receiver = HTTP3Receiver(decoder=None)
             http3_receiver.receive(b"")
+
 
 if __name__ == '__main__':
     unittest.main()

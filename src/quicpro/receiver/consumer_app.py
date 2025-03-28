@@ -9,13 +9,16 @@ from quicpro.exceptions import PipelineError
 
 logger = logging.getLogger(__name__)
 
+
 class ConsumerConfig(BaseModel):
     process_callback: Optional[Callable[[str], None]] = Field(default=None)
+
 
 class ConsumerApp:
     """
     A simple consumer application that processes a received message.
     """
+
     def __init__(self, config: Optional[ConsumerConfig] = None) -> None:
         if config is None:
             config = ConsumerConfig()

@@ -15,6 +15,7 @@ from quicpro.exceptions.encryption_error import EncryptionError
 
 logger = logging.getLogger(__name__)
 
+
 class TLSEncryptor:
     def __init__(self, udp_sender: Any, config: TLSConfig, demo: bool = True, dtls_context: Optional[Any] = None) -> None:
         self.udp_sender = udp_sender
@@ -26,7 +27,8 @@ class TLSEncryptor:
             self._sequence_number = 0
         else:
             if self.dtls_context is None:
-                raise EncryptionError("Real TLS encryption mode requires a DTLS/TLS context.")
+                raise EncryptionError(
+                    "Real TLS encryption mode requires a DTLS/TLS context.")
             logger.info("Real TLS encryption mode activated.")
 
     def _compute_nonce(self) -> bytes:
@@ -38,8 +40,10 @@ class TLSEncryptor:
             try:
                 nonce = self._compute_nonce()
                 ciphertext = self.aesgcm.encrypt(nonce, quic_packet, None)
-                record = self._sequence_number.to_bytes(8, byteorder="big") + ciphertext
-                logger.info("TLSEncryptor (demo) produced packet with sequence number %d", self._sequence_number)
+                record = self._sequence_number.to_bytes(
+                    8, byteorder="big") + ciphertext
+                logger.info(
+                    "TLSEncryptor (demo) produced packet with sequence number %d", self._sequence_number)
                 self.udp_sender.send(record)
             except Exception as e:
                 logger.exception("TLSEncryptor demo encryption failed: %s", e)
@@ -49,7 +53,8 @@ class TLSEncryptor:
         else:
             try:
                 encrypted_packet = self.dtls_context.encrypt(quic_packet)
-                logger.info("TLSEncryptor (real) encrypted packet using DTLS context.")
+                logger.info(
+                    "TLSEncryptor (real) encrypted packet using DTLS context.")
                 self.udp_sender.send(encrypted_packet)
             except Exception as e:
                 logger.exception("TLSEncryptor real encryption failed: %s", e)
