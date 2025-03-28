@@ -9,14 +9,13 @@ import socket
 import time
 from typing import Optional, Dict, Any
 from urllib.parse import urlsplit, urlunsplit, urlencode
-
 from quicpro.response import Response
 from quicpro.utils.quic.quic_manager import QuicManager
 from quicpro.utils.http3.connection.http3_connection import HTTP3Connection
 from quicpro.utils.tls.tls_manager import TLSManager
 
 class Client:
-    def __init__(self, remote_address: Optional[tuple] = None, timeout: float = 2.0,
+    def __init__(self, remote_address: Optional[tuple] = None, timeout: float = 1.0,
                  event_loop_max_workers: int = 2, demo_mode: bool = True,
                  certfile: Optional[str] = None, keyfile: Optional[str] = None,
                  cafile: Optional[str] = None) -> None:
@@ -40,7 +39,7 @@ class Client:
         sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         sock.bind(self.remote_address)
-        sock.settimeout(0.01)  
+        sock.settimeout(0.01)
         start_time = time.time()
         try:
             while (time.time() - start_time) < self.timeout:
@@ -65,7 +64,7 @@ class Client:
         request_body = f"{method} {url}".encode("utf-8")
         request_body = self.tls_manager.encrypt_data(request_body)
         self.http3_connection.send_request(request_body, **kwargs)
-        self._listener_thread.join(timeout=2)  # Reduced join timeout to 2 seconds
+        self._listener_thread.join(timeout=2)
         payload = self.http3_connection.receive_response()
         status_code = 200 if payload else 500
         return Response(status_code, payload)

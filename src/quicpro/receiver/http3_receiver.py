@@ -29,7 +29,6 @@ class HTTP3Receiver:
             if not self._validate_frame(frame):
                 raise HTTP3FrameError("Extracted HTTP/3 frame failed validation.")
             logger.info("HTTP3Receiver successfully decoded frame")
-            # If a custom _decode_frame method is provided, use it.
             if hasattr(self, "_decode_frame"):
                 header_block, _ = self._decode_frame(frame)
             else:

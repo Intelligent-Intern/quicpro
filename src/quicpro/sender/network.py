@@ -2,13 +2,11 @@
 Network module.
 Handles low-level UDP socket operations.
 """
-
 import socket
 import logging
 from typing import Tuple
 
 logger = logging.getLogger(__name__)
-
 
 class Network:
     """

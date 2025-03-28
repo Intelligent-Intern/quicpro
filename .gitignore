@@ -34,3 +34,4 @@ Thumbs.db
 build_package.sh
 file_tree.txt
 code.sh
+autoformat.sh

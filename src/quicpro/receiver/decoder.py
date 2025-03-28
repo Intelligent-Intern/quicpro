@@ -1,17 +1,11 @@
 import logging
 from typing import Any
 from quicpro.exceptions import DecodingError
+
 logger = logging.getLogger(__name__)
 
 class Decoder:
-    """
-    Decoder extracts message content from an HTTP/3 frame and passes it to a consumer_app.
-    """
     def __init__(self, consumer_app: Any) -> None:
-        """
-        Args:
-          consumer_app: An object with a consume(message: str) method.
-        """
         self.consumer_app = consumer_app
 
     def decode(self, quic_packet: bytes) -> None:
@@ -30,12 +24,10 @@ class Decoder:
                 logger.warning("Frame prefix not found; defaulting to 'Unknown'.")
                 message_content = "Unknown"
             logger.info("Decoder extracted message: %s", message_content)
-            # Invoke the consumer’s consume() method.
             self.consumer_app.consume(message_content)
         except Exception as exc:
             logger.exception("Decoder encountered an error: %s", exc)
             raise DecodingError(f"Error decoding quic packet: {exc}") from exc
 
-    # NEW: Add a consume method so that this instance now supports a consume(…) call.
     def consume(self, message: str) -> None:
         self.consumer_app.consume(message)

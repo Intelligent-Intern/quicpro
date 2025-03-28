@@ -10,20 +10,6 @@ from .tls_context import TLSContext
 logger = logging.getLogger(__name__)
 
 def encrypt_data(tls_context: TLSContext, plaintext: bytes) -> bytes:
-    """
-    Encrypt the given plaintext using the provided TLSContext.
-    
-    Args:
-        tls_context (TLSContext): An instance of TLSContext (e.g., TLS13Context or TLS12Context)
-                                   that holds negotiated keys after a successful handshake.
-        plaintext (bytes): Data to encrypt.
-        
-    Returns:
-        bytes: The encrypted ciphertext.
-        
-    Raises:
-        Exception: Propagates any error raised during encryption.
-    """
     try:
         logger.debug("Attempting encryption of %d bytes of plaintext", len(plaintext))
         ciphertext = tls_context.encrypt(plaintext)
@@ -35,21 +21,9 @@ def encrypt_data(tls_context: TLSContext, plaintext: bytes) -> bytes:
         raise e
 
 class TLSEncryptionEngine:
-    """
-    Encapsulate encryption-related operations for TLS.
-    """
     def __init__(self, tls_context: TLSContext) -> None:
         self.tls_context = tls_context
 
     def encrypt(self, data: bytes) -> bytes:
-        """
-        Encrypt data using the TLS context.
-        
-        Args:
-            data (bytes): The plaintext data to encrypt.
-            
-        Returns:
-            bytes: The encrypted data.
-        """
         logger.debug("TLSEncryptionEngine: Received %d bytes of data for encryption", len(data))
         return encrypt_data(self.tls_context, data)

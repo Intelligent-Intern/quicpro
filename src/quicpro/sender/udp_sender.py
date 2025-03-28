@@ -2,15 +2,12 @@
 UDPSender module.
 Transmits encrypted packets over UDP with retry logic and context management.
 """
-
 import logging
 import time
 from typing import Any
-
 from quicpro.exceptions import TransmissionError
 
 logger = logging.getLogger(__name__)
-
 
 class UDPSender:
     """

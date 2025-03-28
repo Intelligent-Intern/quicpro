@@ -15,7 +15,7 @@ class HTTP3Sender:
     def __init__(self, quic_sender: object, stream_id: int) -> None:
         """
         Initialize the HTTP3Sender.
-        
+
         Args:
             quic_sender (object): An object with a send(frame: bytes) method.
             stream_id (int): The stream identifier.

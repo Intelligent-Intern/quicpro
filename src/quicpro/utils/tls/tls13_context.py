@@ -16,15 +16,6 @@ logger = logging.getLogger(__name__)
 
 class TLS13Context(TLSContext):
     def __init__(self, certfile: str, keyfile: str, cafile: Optional[str] = None, demo: bool = True) -> None:
-        """
-        Initialize TLS13Context with certificate and key.
-        
-        Args:
-            certfile (str): Path to the certificate file.
-            keyfile (str): Path to the private key file.
-            cafile (Optional[str]): Path to the CA certificate bundle (if required).
-            demo (bool): If True, demo mode is enabled (skips certificate loading and dummy handshake).
-        """
         self.demo = demo
         self.context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
         self.context.minimum_version = ssl.TLSVersion.TLSv1_3
@@ -49,7 +40,6 @@ class TLS13Context(TLSContext):
             self.context.verify_mode = ssl.CERT_NONE
         self._negotiated_keys: Optional[Dict[str, bytes]] = None
         if self.demo:
-            # In demo mode, simulate a completed handshake with dummy keys.
             self.handshake_completed = True
             self._negotiated_keys = {
                 "read_key": b"demo_read_key_32_bytes_long__",

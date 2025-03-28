@@ -2,15 +2,12 @@
 QUICSender module.
 Packages HTTP/3 stream frames into QUIC packets and sends them using the TLSEncryptor.
 """
-
 import logging
 from typing import Any
-
 from quicpro.exceptions import TransmissionError
 from quicpro.utils.quic.packet.encoder import encode_quic_packet
 
 logger = logging.getLogger(__name__)
-
 
 class QUICSender:
     """

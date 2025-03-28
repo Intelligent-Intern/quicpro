@@ -2,9 +2,7 @@
 Base loop module.
 Defines the BaseEventLoop interface.
 """
-
 import abc
-
 
 class BaseEventLoop(abc.ABC):
     """

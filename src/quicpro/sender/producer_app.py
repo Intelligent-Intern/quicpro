@@ -2,10 +2,8 @@
 ProducerApp module.
 Accepts a message, creates a Message instance, and passes it to an Encoder.
 """
-
 from typing import Union
 from quicpro.sender.encoder import Encoder, Message
-
 
 class ProducerApp:
     """
