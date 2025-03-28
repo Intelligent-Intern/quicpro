@@ -1,0 +1,36 @@
+# Virtuelles Environment
+venv/
+env/
+*.env
+
+# Build-Artefakte
+build/
+dist/
+*.egg-info/
+
+# Cache-Dateien
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Distribution/Installationsdateien
+*.egg
+*.manifest
+*.spec
+
+# Logger, Debug- und VSCode-Dateien
+*.log
+.vscode/
+
+# Systemdateien
+.DS_Store
+Thumbs.db
+
+# IDE-Dateien
+.idea/
+*.iml
+*.ipynb_checkpoints/
+
+build_package.sh
+file_tree.txt
+code.sh
