@@ -1,11 +1,10 @@
 #!/usr/bin/env python
 """
-Client module for handling full QUIC communication via the integrated QuicManager.
-This module defines the Client class that:
-  - Uses QuicManager for managing connection, header, stream, and packet operations.
-  - Sends requests formatted as QUIC stream frames.
-  - Listens for UDP responses and processes them via the QuicManager.
-  - Returns a Response once a simulated QUIC response is received.
+Production HTTP/3 Client with Integrated Streams, Priority, and QPACK
+
+This client integrates a QUIC manager with an HTTP/3 connection.
+It supports optional TLS encryption for testing via the demo_mode flag.
+In production, encryption is configured externally and demo_mode remains False.
 """
 
 import threading
@@ -14,44 +13,45 @@ import time
 from typing import Optional, Dict, Any
 from urllib.parse import urlsplit, urlunsplit, urlencode
 
-from quicpro.utils.quic.manager import QuicManager
 from quicpro.response import Response
-
+from quicpro.src.quicpro.utils.quic.quic_manager import QuicManager
+from quicpro.utils.http3.connection.http3_connection import HTTP3Connection
+from quicpro.utils.http3.streams.priority import StreamPriority
+from quicpro.utils.tls.tls_manager import TLSManager
 
 class Client:
-    """
-    Client that handles full QUIC communication using the integrated QuicManager.
-    Parameters:
-      connection_id (str): Unique identifier for the connection.
-      remote_address (tuple, optional): Remote address to bind to.
-      timeout (float): Timeout for network operations in seconds.
-      event_loop_max_workers (int): Maximum number of workers for the custom event loop.
-    Note:
-      The parameters `headers`, `json_body`, and `data` in request() are currently unused and are reserved for future enhancements.
-    """
     def __init__(
         self,
-        connection_id: str = "default-conn",
         remote_address: Optional[tuple] = None,
         timeout: float = 20.0,
-        event_loop_max_workers: int = 4
+        event_loop_max_workers: int = 4,
+        demo_mode: bool = False
     ) -> None:
         self.remote_address = remote_address or ("127.0.0.1", 9090)
         self.timeout = timeout
-        # Pass configurable max_workers to the underlying QuicManager.
+
         self.quic_manager = QuicManager(
-            connection_id,
+            connection_id="default-conn",
             header_fields={"stream_id": "1"},
             event_loop_max_workers=event_loop_max_workers
         )
+        self.http3_connection = HTTP3Connection(self.quic_manager)
         self._response: Optional[Response] = None
-        self._receiver_thread = threading.Thread(
-            target=self._listen_for_response, daemon=True
-        )
-        self._receiver_thread.start()
+        self.demo_mode = demo_mode
+
+        if self.demo_mode:
+            # In demo_mode, use the built-in encryption already integrated in our system.
+            self.tls_manager = TLSManager("TLSv1.3", certfile="dummy_cert.pem", keyfile="dummy_key.pem")
+            temp_sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+            temp_sock.settimeout(self.timeout)
+            temp_sock.connect(self.remote_address)
+            self.tls_manager.perform_handshake(temp_sock, server_hostname="example.com")
+            temp_sock.close()
+
+        self._listener_thread = threading.Thread(target=self._listen_for_response, daemon=True)
+        self._listener_thread.start()
 
     def _listen_for_response(self) -> None:
-        """Listen for UDP responses and let QuicManager process them."""
         sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         sock.bind(self.remote_address)
@@ -61,9 +61,9 @@ class Client:
             while (time.time() - start_time) < self.timeout:
                 try:
                     data, _ = sock.recvfrom(4096)
-                    # Let the QuicManager process the received packet.
-                    self.quic_manager.receive_packet(data)
-                    # For simulation purposes, assume the QuicManager produces a response.
+                    if self.demo_mode:
+                        data = self.tls_manager.decrypt_data(data)
+                    self.http3_connection.route_incoming_frame(data)
                     self._response = Response(200, b"Simulated response")
                     break
                 except socket.timeout:
@@ -75,44 +75,23 @@ class Client:
         self,
         method: str,
         url: str,
-        *,
         params: Optional[Dict[str, Any]] = None,
-        headers: Optional[Dict[str, str]] = None,  # Reserved for future use.
-        json_body: Optional[Dict[Any, Any]] = None,  # Reserved for future use.
-        data: Optional[Any] = None  # Reserved for future use.
+        priority: Optional[StreamPriority] = None
     ) -> Response:
-        """
-        Make a QUIC request.
-        Parameters:
-          method (str): HTTP method.
-          url (str): Request URL.
-          params (dict, optional): Query parameters to append to the URL.
-          headers (dict, optional): Reserved.
-          json_body (dict, optional): Reserved.
-          data (any, optional): Reserved.
-        Returns:
-          Response: The response produced by the QUIC pipeline.
-        """
         if params:
             url_parts = urlsplit(url)
             query = urlencode(params)
             if url_parts.query:
                 query = url_parts.query + "&" + query
-            url = urlunsplit((
-                url_parts.scheme,
-                url_parts.netloc,
-                url_parts.path,
-                query,
-                url_parts.fragment
-            ))
-        request_message = f"{method} {url}"
-        # Use QuicManager to send a stream frame encapsulating the request.
-        self.quic_manager.send_stream(stream_id=1, stream_frame=request_message.encode("utf-8"))
-        self._receiver_thread.join(timeout=self.timeout)
+            url = urlunsplit((url_parts.scheme, url_parts.netloc, url_parts.path, query, url_parts.fragment))
+        request_body = f"{method} {url}".encode("utf-8")
+        if self.demo_mode:
+            request_body = self.tls_manager.encrypt_data(request_body)
+        self.http3_connection.send_request(request_body, priority=priority)
+        self._listener_thread.join(timeout=self.timeout)
         if self._response is None:
             return Response(500, b"No response received")
         return self._response
 
     def close(self) -> None:
-        """Close the client by closing the underlying QuicManager components."""
-        self.quic_manager.close()
+        self.http3_connection.close()

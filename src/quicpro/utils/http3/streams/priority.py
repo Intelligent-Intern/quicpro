@@ -1,27 +1,57 @@
 """
-HTTP/3 Stream Priority Module
+HTTP/3 Stream Priority
 
-This module defines a production-ready priority mechanism for HTTP/3 streams.
-Streams may be assigned a numerical priority and an optional dependency, which
-can be used by the stream manager and scheduler to order transmission.
+This module defines the StreamPriority class, which encapsulates the priority
+of an HTTP/3 stream. The priority is represented as a weight, where a lower
+weight indicates a higher priority. Valid weights range from 1 (highest) to 256
+(lowest). A convenience method allows creation from a common PriorityLevel.
 """
 
-from dataclasses import dataclass, field
+from typing import Union
+from quicpro.utils.http3.streams.priority_level import PriorityLevel
 
-@dataclass(order=True)
+
 class StreamPriority:
     """
-    Represents the priority for an HTTP/3 stream.
+    Represents the priority of an HTTP/3 stream.
 
-    Attributes:
-      weight (int): Should be in the range 1 (lowest priority) to 256 (highest priority). 
-                    Lower numerical values can be interpreted as either higher or lower priority
-                    depending on your chosen policy; here we assume 1 is highest.
-      dependency (int): The stream ID this stream depends on; 0 means no dependency.
+    A lower weight implies higher priority. The weight must be an integer between
+    1 and 256.
     """
-    weight: int = field(default=16, compare=True)
-    dependency: int = field(default=0, compare=False)
+    def __init__(self, weight: int) -> None:
+        """
+        Initialize a StreamPriority instance.
 
-    def __post_init__(self) -> None:
-        if not (1 <= self.weight <= 256):
-            raise ValueError("Weight must be between 1 and 256")
+        Args:
+            weight (int): The weight value (1 to 256).
+
+        Raises:
+            ValueError: If the weight is not within the valid range.
+        """
+        if not (1 <= weight <= 256):
+            raise ValueError("Weight must be between 1 and 256.")
+        self.weight: int = weight
+
+    @classmethod
+    def from_priority_level(cls, level: PriorityLevel) -> "StreamPriority":
+        """
+        Create a StreamPriority instance from a PriorityLevel enum value.
+
+        Args:
+            level (PriorityLevel): A member of the PriorityLevel enumeration.
+
+        Returns:
+            StreamPriority: An instance with the corresponding weight.
+        """
+        return cls(weight=level.value)
+
+    def __lt__(self, other: "StreamPriority") -> bool:
+        return self.weight < other.weight
+
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, StreamPriority):
+            return NotImplemented
+        return self.weight == other.weight
+
+    def __repr__(self) -> str:
+        return f"<StreamPriority weight={self.weight}>"
