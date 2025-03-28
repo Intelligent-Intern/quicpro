@@ -80,3 +80,13 @@ class DynamicTable:
         self.current_size += size
         logger.debug("Added header [%s: %s] (size: %d) to dynamic table (current size: %d)",
                      name, value, size, self.current_size)
+
+    def get_entries(self) -> List[Tuple[str, str]]:
+        """
+        Retrieve all current entries from the dynamic table.
+
+        Returns:
+            List[Tuple[str, str]]: List of header field entries.
+        """
+        return self.entries
+

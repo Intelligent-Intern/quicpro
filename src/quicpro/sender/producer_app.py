@@ -25,3 +25,16 @@ class ProducerApp:
         else:
             msg_obj = Message(content=message)
         self.encoder.encode(msg_obj)
+
+    def has_encoder(self) -> bool:
+        """
+        Check if the encoder is set.
+        """
+        return self.encoder is not None
+
+    def get_encoder(self) -> Encoder:
+        """
+        Retrieve the encoder instance.
+        """
+        return self.encoder
+

@@ -5,20 +5,24 @@ This implementation expects a Message with a "content" attribute and produces
 a frame of the form: b"Frame(<content>)", per test expectations.
 """
 import logging
+from typing import Any
 from quicpro.exceptions.encoding_error import EncodingError
 from quicpro.utils.http3.qpack.encoder import QPACKEncoder
 from quicpro.model.message import Message
-from typing import Any
 
 logger = logging.getLogger(__name__)
 
 
 class Encoder:
+    """Encodes messages for HTTP/3 transmission."""
+
     def __init__(self, http3_sender: Any) -> None:
+        """Initializes the encoder with a sender."""
         self.http3_sender = http3_sender
         self.qpack_encoder = QPACKEncoder(simulate=True)  # Use simulation mode
 
     def encode(self, message: object) -> None:
+        """Encodes the given message into a frame."""
         try:
             if isinstance(message, Message):
                 content = message.content
@@ -34,3 +38,4 @@ class Encoder:
         except Exception as e:
             logger.exception("Encoding failed: %s", e)
             raise EncodingError(f"Encoding failed: {e}") from e
+

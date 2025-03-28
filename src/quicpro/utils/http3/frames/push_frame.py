@@ -3,8 +3,8 @@ Push frame module for HTTP/3.
 Defines a PushFrame class used for server push.
 """
 
-from .frame import HTTP3Frame
 import struct
+from .frame import HTTP3Frame
 
 
 class PushFrame(HTTP3Frame):
@@ -49,4 +49,6 @@ class PushFrame(HTTP3Frame):
         return cls(promised_stream_id, push_payload)
 
     def __repr__(self) -> str:
-        return f"<PushFrame promised_stream_id={self.promised_stream_id} payload_length={len(self.push_payload)}>"
+        return (f"<PushFrame promised_stream_id={self.promised_stream_id} "
+                f"payload_length={len(self.push_payload)}>")
+

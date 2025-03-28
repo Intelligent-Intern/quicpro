@@ -13,6 +13,15 @@ logger = logging.getLogger(__name__)
 
 
 class HTTP3Sender:
+    """
+    A class that sends HTTP/3 stream frames via a QUIC sender.
+    
+    Attributes:
+        quic_sender (object): An object with a send(frame: bytes) method.
+        stream_id (int): The stream identifier.
+        priority (optional): The priority of the stream, not set by default.
+    """
+
     def __init__(self, quic_sender: object, stream_id: int) -> None:
         """
         Initialize the HTTP3Sender.
@@ -26,11 +35,12 @@ class HTTP3Sender:
         self.priority = None
 
     def send(self, frame: bytes) -> None:
+        """Send the HTTP/3 stream frame."""
         try:
-            stream_frame = b"HTTP3Stream(stream_id=%d, payload=Frame(" % self.stream_id + frame + b"))"
-            logger.info(
-                "HTTP3Sender created stream frame for stream %d", self.stream_id)
+            stream_frame = (b"HTTP3Stream(stream_id=%d, payload=Frame(" % self.stream_id + frame + b"))")
+            logger.info("HTTP3Sender created stream frame for stream %d", self.stream_id)
             self.quic_sender.send(stream_frame)
         except Exception as exc:
             logger.exception("HTTP3Sender mapping failed: %s", exc)
             raise TransmissionError(f"HTTP3Sender failed: {exc}") from exc
+

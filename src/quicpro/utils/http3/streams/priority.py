@@ -56,3 +56,4 @@ class StreamPriority:
 
     def __repr__(self) -> str:
         return f"<StreamPriority weight={self.weight}>"
+

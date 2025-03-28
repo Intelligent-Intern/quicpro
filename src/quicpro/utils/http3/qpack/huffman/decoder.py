@@ -75,3 +75,4 @@ def decode(data: bytes) -> str:
             raise ValueError(
                 f"Invalid Huffman padding bits; expected all ones, got {leftover}.")
     return "".join(result_chars)
+

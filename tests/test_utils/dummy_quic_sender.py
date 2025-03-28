@@ -1,7 +1,6 @@
 """
 DummyQUICSender for testing purposes.
 """
-from tests.utils.dummy_tls_encryptor import DummyTLSEncryptor
 
 class DummyQUICSender:
     def __init__(self, tls_encryptor):

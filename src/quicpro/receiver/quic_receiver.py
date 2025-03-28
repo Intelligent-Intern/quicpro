@@ -58,3 +58,10 @@ class QUICReceiver:
             raise QUICFrameReassemblyError(
                 f"Error reassembling QUIC packet: {e}"
             ) from e
+
+    def close(self) -> None:
+        """
+        Clean up resources when the QUICReceiver is no longer needed.
+        """
+        logger.info("QUICReceiver has been closed.")
+

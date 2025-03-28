@@ -36,7 +36,6 @@ def decode_literal(data: bytes, pos: int) -> Tuple[Tuple[str, str], int]:
     start = pos
     if pos >= len(data):
         raise ValueError("Insufficient data for literal header field.")
-    flag = data[pos]
     pos += 1  # Consume flag.
     # Decode header name length with a 5-bit prefix.
     name_length, n = decode_integer(data[pos:], 5)
@@ -55,3 +54,4 @@ def decode_literal(data: bytes, pos: int) -> Tuple[Tuple[str, str], int]:
     pos += value_length
     value = huffman_decode(encoded_value)
     return (name, value), (pos - start)
+

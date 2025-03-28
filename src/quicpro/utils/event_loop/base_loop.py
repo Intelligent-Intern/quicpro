@@ -12,12 +12,12 @@ class BaseEventLoop(abc.ABC):
     @abc.abstractmethod
     def run_forever(self) -> None:
         """Run the event loop indefinitely until stop() is called."""
-        ...
+        pass
 
     @abc.abstractmethod
     def stop(self) -> None:
         """Stop the event loop."""
-        ...
+        pass
 
     @abc.abstractmethod
     def schedule_task(self, func, *args, **kwargs):
@@ -25,4 +25,5 @@ class BaseEventLoop(abc.ABC):
         Schedule a task to be executed.
         Returns a Future.
         """
-        ...
+        pass
+

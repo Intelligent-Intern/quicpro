@@ -18,6 +18,8 @@ logger = logging.getLogger(__name__)
 
 
 class TLSDecryptor:
+    """A class to decrypt QUIC packets using either demo or real TLS decryption methods."""
+
     def __init__(self, quic_receiver: Any, config: TLSConfig, demo: bool = True, dtls_context: Optional[Any] = None) -> None:
         self.quic_receiver = quic_receiver
         self.config = config
@@ -32,10 +34,12 @@ class TLSDecryptor:
             logger.info("Real TLS decryption mode activated.")
 
     def _compute_nonce(self, seq_number: int) -> bytes:
+        """Compute the nonce used for AES-GCM decryption."""
         seq_bytes = seq_number.to_bytes(12, byteorder="big")
         return bytes(iv_byte ^ seq_byte for iv_byte, seq_byte in zip(self.config.iv, seq_bytes))
 
     def decrypt(self, encrypted_packet: bytes) -> None:
+        """Decrypt the given encrypted packet."""
         if self.demo:
             try:
                 if len(encrypted_packet) < 9:
@@ -59,3 +63,4 @@ class TLSDecryptor:
             except Exception as e:
                 logger.exception("TLSDecryptor real decryption failed: %s", e)
                 raise DecryptionError(f"Real decryption failed: {e}") from e
+

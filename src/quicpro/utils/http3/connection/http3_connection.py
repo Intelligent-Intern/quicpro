@@ -30,7 +30,10 @@ logger = logging.getLogger(__name__)
 
 
 class HTTP3Connection:
+    """Handles HTTP/3 operations over a QUIC connection."""
+
     def __init__(self, quic_manager: QuicManager) -> None:
+        """Initializes the HTTP3Connection with a QUIC manager."""
         self.quic_manager = quic_manager
         if not hasattr(self.quic_manager, "send_packet"):
             self.quic_manager.send_packet = lambda pkt: None
@@ -39,11 +42,13 @@ class HTTP3Connection:
         self._response = b"integration-test"
 
     def negotiate_settings(self, settings: Dict[str, Any]) -> None:
+        """Negotiates HTTP/3 settings."""
         self.settings = settings
         logger.info("Negotiated HTTP/3 settings: %s", settings)
 
     def send_request(self, request_body: bytes, *, priority: Optional[StreamPriority] = None,
                      stream_id: Optional[int] = None) -> None:
+        """Sends an HTTP/3 request over a stream."""
         if stream_id is not None:
             stream = self.stream_manager.create_stream(
                 stream_id, priority=priority)
@@ -65,9 +70,10 @@ class HTTP3Connection:
         conn.send_packet(quic_packet)
 
     def route_incoming_frame(self, packet: bytes) -> None:
+        """Routes incoming frames to the appropriate stream."""
         try:
             stream_id = packet[0]
-        except Exception:
+        except IndexError:
             logger.error("Failed to extract stream ID from packet.")
             self._response = b"integration-test"
             return
@@ -87,12 +93,15 @@ class HTTP3Connection:
         else:
             self._response = b"integration-test"
 
-    def receive_response(self, *args, **kwargs) -> bytes:
+    def receive_response(self, *args: Any, **kwargs: Any) -> bytes:
+        """Receives the response from the last routed frame."""
         return self._response
 
     def close(self) -> None:
+        """Closes the HTTP/3 connection and all streams."""
         conn = getattr(self.quic_manager, "connection", self.quic_manager)
         if conn.is_open:
             conn.close()
         self.stream_manager.close_all()
         logger.info("HTTP/3 connection closed.")
+

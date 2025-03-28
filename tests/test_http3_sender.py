@@ -5,13 +5,7 @@ Test module for the HTTP3 sender.
 import unittest
 from quicpro.sender.http3_sender import HTTP3Sender
 from quicpro.exceptions import TransmissionError
-
-class DummyTLSEncryptor:
-    def __init__(self):
-        self.received_packet = None
-
-    def encrypt(self, packet: bytes) -> None:
-        self.received_packet = packet
+from tests.test_utils.dummy_tls_encryptor import DummyTLSEncryptor
 
 class DummyQUICSender:
     def __init__(self, tls_encryptor):

@@ -6,36 +6,16 @@ import unittest
 from quicpro.sender.encoder import Encoder, Message
 from quicpro.sender.http3_sender import HTTP3Sender
 from quicpro.exceptions import TransmissionError
+from tests.test_utils.dummy_tls_encryptor import DummyTLSEncryptor
+from tests.test_utils.dummy_quic_sender import DummyQUICSender
+from tests.test_utils.dummy_http3_sender import DummyHTTP3Sender
 
-class DummyTLSEncryptor:
-    """A dummy TLS encryptor for testing."""
-    def __init__(self):
-        self.received_packet = None
-
-    def encrypt(self, packet: bytes) -> None:
-        self.received_packet = packet
-
-class DummyQUICSender:
-    """A dummy QUIC sender that uses a dummy TLS encryptor."""
-    def __init__(self, tls_encryptor: DummyTLSEncryptor):
-        self.tls_encryptor = tls_encryptor
-        self.sent_frame = None
-
-    def send(self, frame: bytes) -> None:
-        self.sent_frame = frame
-        packet = b"QUICFRAME:dummy:0:1:HTTP3:" + frame
-        self.tls_encryptor.encrypt(packet)
-
-class DummyHTTP3Sender:
-    """A dummy HTTP/3 sender that wraps a QUIC sender."""
-    def __init__(self, quic_sender: DummyQUICSender, stream_id: int):
-        self.quic_sender = quic_sender
-        self.stream_id = stream_id
-
-    def send(self, frame: bytes) -> None:
-        stream_frame = b"HTTP3Stream(stream_id=%d, payload=Frame(" % self.stream_id + frame + b"))"
-        self.quic_sender.send(stream_frame)
-
+'''
+This test suite is designed to validate the functionality of the QUIC sender module.
+It includes tests for the sender pipeline, ensuring that messages are correctly encoded
+and sent through the TLS encryptor. Additionally, it tests the handling of sender failures
+by raising appropriate exceptions.
+'''
 class TestSenderPipeline(unittest.TestCase):
     """Test cases for the sender pipeline."""
     def setUp(self):

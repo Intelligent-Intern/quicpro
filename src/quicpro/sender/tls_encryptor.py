@@ -17,6 +17,8 @@ logger = logging.getLogger(__name__)
 
 
 class TLSEncryptor:
+    """Encryptor for TLS encryption of QUIC packets."""
+
     def __init__(self, udp_sender: Any, config: TLSConfig, demo: bool = True, dtls_context: Optional[Any] = None) -> None:
         self.udp_sender = udp_sender
         self.config = config
@@ -32,16 +34,17 @@ class TLSEncryptor:
             logger.info("Real TLS encryption mode activated.")
 
     def _compute_nonce(self) -> bytes:
+        """Compute the nonce for encryption."""
         seq_bytes = self._sequence_number.to_bytes(12, byteorder="big")
         return bytes(iv_byte ^ seq_byte for iv_byte, seq_byte in zip(self.config.iv, seq_bytes))
 
     def encrypt(self, quic_packet: bytes) -> None:
+        """Encrypt a QUIC packet using the selected mode."""
         if self.demo:
             try:
                 nonce = self._compute_nonce()
                 ciphertext = self.aesgcm.encrypt(nonce, quic_packet, None)
-                record = self._sequence_number.to_bytes(
-                    8, byteorder="big") + ciphertext
+                record = self._sequence_number.to_bytes(8, byteorder="big") + ciphertext
                 logger.info(
                     "TLSEncryptor (demo) produced packet with sequence number %d", self._sequence_number)
                 self.udp_sender.send(record)
@@ -59,3 +62,4 @@ class TLSEncryptor:
             except Exception as e:
                 logger.exception("TLSEncryptor real encryption failed: %s", e)
                 raise EncryptionError(f"Real encryption failed: {e}") from e
+

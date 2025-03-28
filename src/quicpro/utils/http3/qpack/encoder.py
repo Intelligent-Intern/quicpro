@@ -22,8 +22,7 @@ import hashlib
 from typing import Dict, Tuple
 from .varint import encode_integer
 from .static_table import STATIC_TABLE
-from .dynamic_table import DynamicTable, header_field_size
-from .instructions import encode_dynamic_table_size_update
+from .dynamic_table import DynamicTable
 from .huffman import huffman_encode
 from .decoder import QPACKDecoder
 
@@ -35,6 +34,8 @@ def _calculate_checksum(data: bytes) -> str:
 
 
 class QPACKEncoder:
+    """QPACK Encoder class for HTTP/3."""
+    
     LITERAL_WITH_INCREMENTAL_INDEXING = 0x00
     LITERAL_NEVER_INDEXED = 0x10
     LITERAL_WITHOUT_INDEXING = 0x20
@@ -120,14 +121,11 @@ class QPACKEncoder:
         if self.simulate:
             if "content" in headers:
                 frame = b"Frame(" + headers["content"].encode("utf-8") + b")"
-                logger.debug(
-                    "Simulated QPACK encoding produced frame: %s", frame)
+                logger.debug("Simulated QPACK encoding produced frame: %s", frame)
                 return frame
-            else:
-                encoded = ",".join(
-                    f"{k}={v}" for k, v in headers.items()).encode("utf-8")
-                logger.debug("Simulated QPACK fallback encoding: %s", encoded)
-                return encoded
+            encoded = ",".join(f"{k}={v}" for k, v in headers.items()).encode("utf-8")
+            logger.debug("Simulated QPACK fallback encoding: %s", encoded)
+            return encoded
 
         # Professional mode encoding:
         header_block = bytearray()
@@ -135,14 +133,10 @@ class QPACKEncoder:
             found, index = self._find_header_field(name, value)
             if found:
                 encoded_index = bytearray(encode_integer(index, 6))
-                # Set the most significant bit for static table indexing.
                 if index <= len(STATIC_TABLE):
                     encoded_index[0] |= 0x80
                     logger.debug(
                         "Encoded header [%s: %s] as static indexed (index=%d)", name, value, index)
-                else:
-                    logger.debug(
-                        "Encoded header [%s: %s] as dynamic indexed (index=%d)", name, value, index)
                 header_block.extend(encoded_index)
             else:
                 if name.lower() in {"authorization", "cookie"}:
@@ -168,3 +162,4 @@ class QPACKEncoder:
                         "QPACK round-trip verification failed during auditing.")
             logger.info("QPACK round-trip verification succeeded.")
         return len(block_bytes).to_bytes(2, byteorder="big") + block_bytes
+

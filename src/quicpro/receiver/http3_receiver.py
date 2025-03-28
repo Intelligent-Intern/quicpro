@@ -15,6 +15,8 @@ logger = logging.getLogger(__name__)
 
 
 class HTTP3Receiver:
+    """HTTP3Receiver processes incoming QUIC packets and decodes HTTP/3 frames."""
+    
     def __init__(self, decoder: object) -> None:
         """
         Initialize the HTTP3Receiver.
@@ -24,6 +26,7 @@ class HTTP3Receiver:
         self.decoder = decoder
 
     def receive(self, quic_packet: bytes) -> None:
+        """Receives a QUIC packet and processes it to extract and decode the HTTP/3 frame."""
         try:
             logger.debug(
                 "HTTP3Receiver received packet of length %d", len(quic_packet))
@@ -38,21 +41,27 @@ class HTTP3Receiver:
                 header_block = frame
             try:
                 message = header_block.decode("utf-8")
-            except Exception:
+            except UnicodeDecodeError:
                 message = "Unknown"
             self.decoder.consume(message)
-        except Exception as exc:
+        except HTTP3FrameError as exc:
             logger.exception("HTTP3Receiver processing failed", exc_info=exc)
+            raise
+        except Exception as exc:
+            logger.exception("Unexpected error during processing", exc_info=exc)
             raise
 
     def _extract_http3_frame(self, packet: bytes) -> bytes:
+        """Extracts the HTTP/3 frame from the incoming packet."""
         if not packet:
             raise HTTP3FrameError("Empty packet received.")
         if len(packet) >= 2:
             length = int.from_bytes(packet[:2], byteorder="big")
             if len(packet) >= 2 + length:
-                return packet[2:2+length]
+                return packet[2:2 + length]
         return packet
 
     def _validate_frame(self, frame: bytes) -> bool:
+        """Validates the extracted HTTP/3 frame."""
         return len(frame) > 0
+

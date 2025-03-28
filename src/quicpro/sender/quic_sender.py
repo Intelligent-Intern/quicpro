@@ -31,3 +31,10 @@ class QUICSender:
         except Exception as e:
             logger.exception("QUICSender packaging failed: %s", e)
             raise TransmissionError(f"Transmission error: {e}") from e
+
+    def close(self) -> None:
+        """
+        Close the sender and perform any necessary cleanup.
+        """
+        logger.info("QUICSender is closing.")
+

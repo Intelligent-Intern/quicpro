@@ -15,7 +15,6 @@ instructions_decoder, and literal_decoder modules.
 """
 
 import logging
-import hashlib
 from typing import Dict
 
 from .varint import decode_integer
@@ -132,3 +131,4 @@ class QPACKDecoder:
             checksum = _calculate_checksum(block)
             logger.info("Decoded QPACK header block checksum: %s", checksum)
         return headers
+

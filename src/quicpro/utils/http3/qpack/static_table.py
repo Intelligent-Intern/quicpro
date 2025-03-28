@@ -4,8 +4,6 @@ Static Table for QPACK Encoder
 This module defines the complete static header table as specified by RFC 9204.
 """
 
-from typing import List, Tuple
-
 STATIC_TABLE = [
     (":authority", ""),
     (":method", "GET"),
@@ -111,3 +109,4 @@ STATIC_TABLE = [
 if len(STATIC_TABLE) != 99:
     raise RuntimeError(
         f"Static table incomplete; expected 99 entries but got {len(STATIC_TABLE)}.")
+
