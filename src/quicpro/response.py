@@ -2,10 +2,14 @@
 Module quicpro.response
 This module provides an HTTP Response class along with related helper methods to work with HTTP responses in a chunked and incremental manner.
 """
-
 import codecs
 from typing import Iterator, Optional, Dict
 
+class HTTPStatusError(Exception):
+    """
+    Exception raised when an HTTP response has an error status.
+    """
+    pass
 
 class Response:
     """
@@ -100,10 +104,3 @@ class Response:
             else "Empty"
         )
         return f"<Response {self.status_code}: {summary}>"
-
-
-class HTTPStatusError(Exception):
-    """
-    Exception raised when an HTTP response has an error status.
-    """
-    pass

@@ -1,17 +1,14 @@
 """
 QUIC Handshake and Version Negotiation (Production Ready)
-
 Implements the handshake procedure mandated by RFC 9000,
 including support for Initial, Handshake, and 1‑RTT packet number spaces.
 Also performs robust version negotiation if the peer returns a Version Negotiation packet.
 This implementation uses a state machine to control the handshake flow.
 """
-
 import time
 import logging
 from enum import Enum
 from typing import List, Optional
-
 logger = logging.getLogger(__name__)
 
 # Define handshake states
@@ -40,6 +37,12 @@ class QUICHandshake:
     """
     Implements the QUIC handshake state machine.
     """
+    INITIAL = HandshakeState.INITIAL
+    VERSION_NEGOTIATION = HandshakeState.VERSION_NEGOTIATION
+    HANDSHAKE = HandshakeState.HANDSHAKE
+    ONE_RTT = HandshakeState.ONE_RTT
+    COMPLETED = HandshakeState.COMPLETED
+
     def __init__(self, connection, local_version: str = "v1"):
         """
         Args:
@@ -127,10 +130,10 @@ class QUICHandshake:
     def run(self, timeout: float = 5.0) -> None:
         """
         Run the handshake state machine until completed or timeout.
-        
+
         Args:
             timeout (float): Maximum time to wait for handshake completion.
-        
+
         Raises:
             TimeoutError: If handshake is not completed within timeout.
         """

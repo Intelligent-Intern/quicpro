@@ -3,7 +3,6 @@ Common Constants and Utility Functions for TLS Modules
 This module provides foundational constants, logging setup, and cryptographically
 secure utilities for TLS operations.
 """
-
 import os
 import logging
 
@@ -35,10 +34,10 @@ def generate_random_bytes(n: int) -> bytes:
     
     Args:
         n (int): The number of bytes to generate.
-
+        
     Returns:
         bytes: n random bytes.
-    
+        
     Raises:
         ValueError: If n is not a positive integer.
     """

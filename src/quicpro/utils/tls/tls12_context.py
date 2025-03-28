@@ -4,16 +4,16 @@ Provides a fallback TLSContext implementation using TLS 1.2.
 This implementation uses an SSLContext for the handshake, then—after a successful handshake—
 exports keying material using OpenSSL’s SSL_export_keying_material (via the ssl socket’s API).
 It then employs a real AES-GCM cipher (from cryptography) for packet encryption and decryption.
+Integrated robust certificate verification and enhanced key export handling per full QUIC standard.
 """
-
 import ssl
 import socket
 import logging
 from typing import Optional, Dict
 from .tls_context import TLSContext
 from .base import generate_random_bytes, log_tls_debug
-
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
+from .certificates import load_certificate, verify_certificate
 
 logger = logging.getLogger(__name__)
 
@@ -40,8 +40,12 @@ class TLS12Context(TLSContext):
             try:
                 self.context.load_verify_locations(cafile)
                 self.context.verify_mode = ssl.CERT_REQUIRED
+                # Robust certificate verification integration:
+                cert = load_certificate(certfile)
+                if not verify_certificate(cert, cafile):
+                    raise ValueError("Certificate verification failed.")
             except Exception as e:
-                logger.exception("Failed loading CA file for TLS 1.2")
+                logger.exception("Failed loading or verifying CA file for TLS 1.2")
                 raise e
         else:
             self.context.check_hostname = False
@@ -71,9 +75,7 @@ class TLS12Context(TLSContext):
             self.ssl_sock = self.context.wrap_socket(sock, server_hostname=server_hostname, do_handshake_on_connect=False)
             self.ssl_sock.do_handshake()
             self.handshake_completed = True
-
             # Export keying material using SSL_export_keying_material.
-            # The label and context are defined per RFC; here we use a common label.
             if not hasattr(self.ssl_sock, "export_keying_material"):
                 raise RuntimeError("SSL socket does not support export_keying_material facility.")
             
@@ -107,7 +109,7 @@ class TLS12Context(TLSContext):
             bytes: Ciphertext including the nonce and GCM tag.
             
         Raises:
-            RuntimeError: If handshake is not complete or keys/qipher are not initialized.
+            RuntimeError: If handshake is not complete or keys/cipher are not initialized.
         """
         if not self.handshake_completed or self._negotiated_keys is None or self.aesgcm is None:
             raise RuntimeError("TLS 1.2 handshake not completed. Cannot encrypt data.")
@@ -158,9 +160,14 @@ class TLS12Context(TLSContext):
         """
         if not self.handshake_completed or self.ssl_sock is None:
             raise RuntimeError("TLS 1.2 handshake not completed. Cannot update keys.")
-        # Export new keying material.
-        read_key = self.ssl_sock.export_keying_material(b"client read", 32, None)
-        write_key = self.ssl_sock.export_keying_material(b"client write", 32, None)
+        try:
+            # Re-export new keying material.
+            read_key = self.ssl_sock.export_keying_material(b"client read", 32, None)
+            write_key = self.ssl_sock.export_keying_material(b"client write", 32, None)
+        except Exception as e:
+            logger.exception("Failed to export new keying material during key update")
+            raise RuntimeError("Key update failed.") from e
+
         self._negotiated_keys = {
             'read_key': read_key,
             'write_key': write_key

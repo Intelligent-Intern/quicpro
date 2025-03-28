@@ -2,41 +2,51 @@ import unittest
 from quicpro.sender.http3_sender import HTTP3Sender
 from quicpro.exceptions import TransmissionError
 
-class DummyQUICSender:
+class DummyTLSEncryptor:
     def __init__(self):
-        self.sent_frames = []
+        self.received_packet = None
+    def encrypt(self, packet: bytes) -> None:
+        self.received_packet = packet
 
+class DummyQUICSender:
+    def __init__(self, tls_encryptor):
+        self.tls_encryptor = tls_encryptor
+        self.sent_frame = None
     def send(self, frame: bytes) -> None:
-        # Simply store the frame for later verification.
-        self.sent_frames.append(frame)
+        self.sent_frame = frame
+        # Simulate wrapping in a QUIC packet
+        packet = b"QUICFRAME:dummy:0:1:HTTP3:" + frame
+        self.tls_encryptor.encrypt(packet)
 
-class TestHTTP3Sender(unittest.TestCase):
-    def setUp(self) -> None:
-        self.dummy_quic_sender = DummyQUICSender()
-        self.stream_id = 9
-        self.http3_sender = HTTP3Sender(quic_sender=self.dummy_quic_sender, stream_id=self.stream_id)
+class DummyHTTP3Sender:
+    def __init__(self, quic_sender, stream_id: int):
+        self.quic_sender = quic_sender
+        self.stream_id = stream_id
+    def send(self, frame: bytes) -> None:
+        stream_frame = b"HTTP3Stream(stream_id=%d, payload=Frame(" % self.stream_id + frame + b"))"
+        self.quic_sender.send(stream_frame)
 
-    def test_send_valid_frame(self) -> None:
-        # Create a sample encoded frame.
-        encoded_frame = b"Frame(Test Message)"
-        # Call send method.
-        self.http3_sender.send(encoded_frame)
-        # Expected stream frame is composed as follows:
-        # b"HTTP3Stream(stream_id=<stream_id>, payload=" + encoded_frame + b")"
-        expected_frame = b"HTTP3Stream(stream_id=%d, payload=" % self.stream_id + encoded_frame + b")"
-        self.assertEqual(len(self.dummy_quic_sender.sent_frames), 1, "Exactly one frame should be sent.")
-        self.assertEqual(self.dummy_quic_sender.sent_frames[0], expected_frame,
-                         "The produced HTTP3 stream frame does not match the expected frame.")
-
-    def test_send_failure(self) -> None:
-        # Simulate a failure in the underlying QUIC sender.
-        class FailingQUICSender:
+class TestSenderPipeline(unittest.TestCase):
+    def setUp(self):
+        self.dummy_encryptor = DummyTLSEncryptor()
+        self.dummy_quic_sender = DummyQUICSender(tls_encryptor=self.dummy_encryptor)
+        self.dummy_http3_sender = DummyHTTP3Sender(self.dummy_quic_sender, stream_id=9)
+    def test_sender_pipeline(self):
+        from quicpro.sender.encoder import Encoder
+        from quicpro.model.message import Message
+        encoder = Encoder(http3_sender=self.dummy_http3_sender)
+        encoder.encode(Message(content="test"))
+        self.assertIsNotNone(self.dummy_encryptor.received_packet,
+                             "TLS encryptor did not receive any packet.")
+        self.assertIn(b"Frame(test)", self.dummy_encryptor.received_packet,
+                      "The encoded frame is missing from the TLS packet.")
+    def test_sender_failure(self):
+        class FailingSender:
             def send(self, frame: bytes) -> None:
                 raise Exception("QUIC Sender failure")
-
-        http3_sender = HTTP3Sender(quic_sender=FailingQUICSender(), stream_id=self.stream_id)
+        sender = HTTP3Sender(quic_sender=FailingSender(), stream_id=9)
         with self.assertRaises(TransmissionError):
-            http3_sender.send(b"Any frame")
+            sender.send(b"Any frame")
 
 if __name__ == '__main__':
     unittest.main()

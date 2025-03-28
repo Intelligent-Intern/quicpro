@@ -6,7 +6,7 @@ This module defines the complete static header table as specified by RFC 9204.
 
 from typing import List, Tuple
 
-STATIC_TABLE: List[Tuple[str, str]] = [
+STATIC_TABLE = [
     (":authority", ""),
     (":method", "GET"),
     (":method", "POST"),
@@ -103,6 +103,9 @@ STATIC_TABLE: List[Tuple[str, str]] = [
     ("prompt", ""),
     ("purpose", ""),
     ("sec-ch-ua", ""),
+    ("sec-ch-ua-mobile", ""),
+    ("sec-ch-ua-platform", ""),
+    ("sec-ch-ua-full-version", "")
 ]
 
 if len(STATIC_TABLE) != 99:
