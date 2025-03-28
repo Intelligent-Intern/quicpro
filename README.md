@@ -1,183 +1,234 @@
-# QuicPro HTTP/3 Client Library
+# quicpro
 
-QuicPro is a fully production‑ready synchronous HTTP/3 client library. It offers a drop‑in alternative to httpx by leveraging native threads—without asyncio—and implements the core QUIC protocol over UDP, integrated HTTP/3 support with advanced stream management, and robust TLS‑like encryption. In addition, the library includes a custom synchronous event loop that you can use to execute concurrent tasks in real‑world scenarios.
+**quicpro** (v1.0.0) is an HTTP/3 client library built on a custom synchronous QUIC implementation with integrated TLS encryption. It provides a cohesive solution for making HTTP/3 requests without relying on asyncio. The library supports both a demo mode (using simulated TLS handshakes and dummy certificate values) as well as a path toward a production‑grade solution that integrates more robust security, full protocol compliance, and advanced error handling.
 
-## Key Features
+---
 
-- **Synchronous Context Managers**  
-  Fully implemented context managers for proper resource cleanup.
+## Overview
 
-- **Custom Synchronous Event Loop**  
-  An optimized thread pool that schedules and executes tasks concurrently.
+quicpro brings together the following components into one unified codebase:
 
-- **Full QUIC Transmission Stack**  
-  Implements connection and stream lifecycle, QUIC handshake with version negotiation, modular packet/header encoding/decoding, congestion control, and loss recovery.
+- **QUIC Implementation:**  
+  - A custom QUIC manager that handles connection state, version negotiation, handshake state machines, and packet encoding/decoding.
+  - Congestion control and retransmission management based on a Cubic-inspired algorithm.
+  - Support for creating and managing streams with integrated stream priority and flow control.
 
-- **HTTP/3 Support with QPACK**  
-  Supports GET, POST, OPTIONS, and a generic request method, along with complete QPACK-based header compression.
+- **HTTP/3 Integration:**  
+  - An HTTP/3 connection layer that uses the QUIC manager to send requests and route incoming frames.
+  - QPACK header compression/decompression with both static and dynamic table support (with simulation mode available for testing).
+  - Basic support for server push and control frames.
 
-- **Robust TLS Integration**  
-  Supports production TLS with complete TLS 1.3 (and TLS 1.2 fallback) handshake as well as demo mode for testing.
+- **TLS Support:**  
+  - A TLS manager that operates in two modes:
+    - **Demo Mode:** Uses dummy certificate values and a simulated handshake to allow quick testing.
+    - **Production Mode (in progress):** Provides a framework for integrating a full TLS 1.3 (or production‑ready TLS) stack with real certificate verification and key derivation.
+  - Encryption and decryption of QUIC packets using AES‑GCM.
 
-- **Modular & Extensible Architecture**  
-  Clear separation into layers: connection, header, packet, streams, congestion control, retransmission, TLS, and exceptions.
+- **Event Loop & Scheduling:**  
+  - A synchronous event loop implemented with a thread‑pool executor.
+  - A task scheduler and worker pool to handle timer‑based events and retransmissions in the QUIC connection.
 
-## Real-World Example: Concurrent PDF Processing Pipeline
+The library is extensively tested with unit and integration tests covering many aspects of the protocol—from QUIC handshake and congestion control to QPACK header processing.
 
-Imagine a production scenario where you need to process a large PDF document. The document is split into sections, and for each section:
-- Optical Character Recognition (OCR) extracts text.
-- A GPT model processes the text.
-- The processed data is then inserted into a vector database.
+---
 
-The following example uses the QuicPro synchronous event loop to schedule tasks concurrently.
+## Features
 
-### Example: pdf_processing_pipeline.py
+- **Integrated QUIC Stack:**  
+  - Version negotiation, multiple packet number spaces, handshake state management, and retransmission.
+  - Congestion control using a simplified Cubic algorithm.
+  
+- **HTTP/3 Support:**  
+  - Send requests and receive responses using full HTTP/3 framing.
+  - QPACK encoder/decoder in simulation mode (with a path toward full dynamic table support).
 
-~~~python
-#!/usr/bin/env python
-"""
-Concurrent PDF Processing Pipeline Example
+- **TLS Encryption:**  
+  - Demo‑mode TLS with simulated handshake and AES‑GCM encryption.
+  - Integrated TLS manager structure ready for production‑grade TLS (TLS 1.3) integration.
 
-This example splits a PDF into sections (simulated), processes each section with OCR 
-and a GPT model (simulated), and then combines the results to fill a vector database.
-The tasks run concurrently using QuicPro's synchronous event loop.
-"""
+- **Stream Management:**  
+  - Create, retrieve, and close streams with priority and flow control.
+  - Basic support for server push via push frames.
 
-import time
-import random
-from concurrent.futures import Future
+- **Synchronous Programming:**  
+  - A synchronous event loop provides a simpler programming model compared to asynchronous code.
+  - Works out of the box on systems without asyncio.
 
-from quicpro.utils.event_loop.sync_loop import SyncEventLoop
+- **Testing and Debugging:**  
+  - Comprehensive unit and integration tests for each subsystem.
+  - Detailed logging that can help trace protocol state and debug issues.
 
-# Simulated OCR function
-def perform_ocr(section: str) -> str:
-    time.sleep(random.uniform(0.5, 1.0))  # Simulate processing delay
-    return f"OCR text for {section}"
+---
 
-# Simulated GPT processing function
-def process_with_gpt(ocr_text: str) -> str:
-    time.sleep(random.uniform(0.5, 1.0))
-    return f"Processed data based on '{ocr_text}'"
+## Installation
 
-# Simulated function to insert into a vector DB
-def insert_into_vector_db(processed_data: str) -> None:
-    time.sleep(random.uniform(0.1, 0.3))
-    print(f"Inserted into vector DB: {processed_data}")
+quicpro is available on [PyPI](https://pypi.org):
 
-def process_pdf_section(section: str, loop: SyncEventLoop) -> Future:
-    """
-    Process one PDF section with OCR and GPT concurrently using the event loop.
-    """
-    # Schedule OCR task
-    ocr_future = loop.schedule_task(perform_ocr, section)
-    # When OCR is complete, schedule GPT processing
-    def gpt_task(ocr_result):
-        return process_with_gpt(ocr_result)
-    gpt_future = loop.schedule_task(gpt_task, ocr_future.result())
-    # When GPT finishes, insert result into vector DB
-    def db_task(processed):
-        insert_into_vector_db(processed)
-    db_future = loop.schedule_task(db_task, gpt_future.result())
-    return db_future
-
-def main():
-    # Simulated sections from splitting a PDF.
-    pdf_sections = [f"Section {i+1}" for i in range(5)]
-    loop = SyncEventLoop(max_workers=4)
-    loop_thread = threading.Thread(target=loop.run_forever, daemon=True)
-    loop_thread.start()
-    
-    tasks = []
-    for section in pdf_sections:
-        future = process_pdf_section(section, loop)
-        tasks.append(future)
-    
-    # Wait for all tasks to complete.
-    for task in tasks:
-        task.result()
-    
-    loop.stop()
-    loop_thread.join()
-    print("PDF processing pipeline completed.")
-
-if __name__ == "__main__":
-    import threading
-    main()
+~~~bash
+pip install quicpro==1.0.0
 ~~~
 
-## Additional Usage Example: Basic HTTP/3 Request
+Alternatively, you can install the development version from source:
 
-### Example: run_client.py
+~~~bash
+python setup.py install
+~~~
+
+---
+
+## Usage
+
+### Example: Single Request (Demo Mode)
+
+Below is an example of how to use quicpro in a demo environment for a single HTTP request:
 
 ~~~python
 #!/usr/bin/env python
 from quicpro.client import Client
-from quicpro.utils.http3.streams.priority import StreamPriority
-from quicpro.utils.http3.streams.priority_level import PriorityLevel
 
 def main():
-    priority = StreamPriority.from_priority_level(PriorityLevel.HIGH)
-    client = Client(remote_address=("127.0.0.1", 9090), timeout=5, event_loop_max_workers=4)
-    response = client.request("GET", "https://example.com", params={"q": "test"}, priority=priority)
-    print("Response:", response)
+    # Initialize the client using demo mode (with simulated TLS handshake etc.)
+    client = Client(
+        remote_address=("127.0.0.1", 9090),
+        timeout=5,
+        event_loop_max_workers=4,
+        demo_mode=True
+    )
+    
+    # Send a GET request (query parameters can be passed)
+    response = client.request("GET", "https://example.com", params={"q": "test"})
+    
+    # Print the response payload and status code
+    print("Response Status Code:", response.status_code)
+    print("Response Content:", response.content)
+    
     client.close()
 
 if __name__ == "__main__":
     main()
 ~~~
 
+### Example: Multiple Parallel Requests (Demo Mode)
 
-### Missing Components for a Perfect QUIC/HTTP3/TLS Implementation
+The following example demonstrates sending several parallel requests using Python's threading:
 
-- **Packet Number Spaces & Encryption Levels**
-  - Separate handling for Initial, Handshake, and 1‑RTT packet number spaces.
-  - Distinct encryption/decryption routines for each packet number space.
+~~~python
+#!/usr/bin/env python
+import threading
+from quicpro.client import Client
 
-- **Flow Control & Stream Management**
-  - Connection‑level flow control with dynamic window adjustment.
-  - Comprehensive per‑stream flow control and state tracking (idle, open, half‑closed, closed).
-  - Robust stream reset and error handling mechanisms.
+def make_request(request_number):
+    # Each thread creates its own client instance
+    client = Client(
+        remote_address=("127.0.0.1", 9090),
+        timeout=5,
+        event_loop_max_workers=4,
+        demo_mode=True
+    )
+    # Pass a unique query parameter for each request
+    response = client.request("GET", "https://example.com", params={"q": f"test-{request_number}"})
+    print(f"Response #{request_number} - Status Code: {response.status_code}, Content: {response.content}")
+    client.close()
 
-- **Full QUIC Frame Support**
-  - Implementation of all QUIC frame types (e.g., ACK, CRYPTO, RESET_STREAM, STOP_SENDING, STREAM_BLOCKED, MAX_DATA, MAX_STREAMS, etc.).
-  - Proper sequencing and reassembly of fragmented frames, including handling out-of-order delivery.
+threads = []
+num_requests = 5  # Adjust the number of parallel requests
 
-- **Advanced Loss Detection & Retransmission**
-  - Complete loss detection algorithms across different encryption levels.
-  - More sophisticated retransmission timers and retry logic for selective packet retransmission.
-  - Integration of explicit ACK frame generation and processing.
+# Start multiple threads for parallel requests
+for i in range(1, num_requests + 1):
+    t = threading.Thread(target=make_request, args=(i,))
+    threads.append(t)
+    t.start()
 
-- **Enhanced Congestion Control**
-  - Support for alternative congestion control algorithms (such as BBR) alongside Cubic.
-  - Fine-tuning of congestion control parameters based on real-world network conditions.
+# Wait for all threads to complete
+for t in threads:
+    t.join()
+~~~
 
-- **Comprehensive TLS Integration**
-  - Direct TLS 1.3 handshake implementation with key extraction via low-level cryptographic APIs.
-  - Automatic key update (rekeying) without requiring full re-handshake.
-  - End-to-end certificate validation, including OCSP stapling and CRL checking.
+### Example: Production Mode
 
-- **Multipath & Connection Migration**
-  - Support for seamless connection migration across different network interfaces.
-  - Multipath QUIC extensions for balancing and redundancy.
+For production use, you must supply actual certificate files and disable demo mode. Follow these steps to install and prepare your certificates:
 
-- **Performance & Scalability Optimizations**
-  - Asynchronous I/O integration (e.g., using epoll, kqueue, or asyncio) for high-throughput, low-latency scenarios.
-  - Zero-copy techniques for packet serialization/deserialization.
-  - Optimizations in memory usage and thread management.
-
-- **Extensive Testing & Robust Error Handling**
-  - Comprehensive unit, integration, and stress tests simulating high-loss, high-reorder, and high-latency networks.
-  - Detailed logging, metrics, and error recovery strategies for production monitoring.
-
-
-## Running Tests
-
-To run the full test suite, execute:
+1. **Obtain or Generate Certificates:**  
+   You need a valid certificate file (`cert.pem`), a private key (`key.pem`), and optionally a CA bundle (`ca.pem`) if you wish to perform proper certificate verification. For testing, you can generate a self-signed certificate using OpenSSL:
 
 ~~~bash
-pytest tests/
+   # Generate a private key
+   openssl genpkey -algorithm RSA -out key.pem -pkeyopt rsa_keygen_bits:2048
+
+   # Generate a self-signed certificate valid for 365 days
+   openssl req -new -x509 -key key.pem -out cert.pem -days 365 -subj "/CN=example.com"
+
+   # (Optional) For testing, you can use the same cert as a CA bundle
+   cp cert.pem ca.pem
 ~~~
+
+2. **Run in Production Mode:**  
+   Set `demo_mode` to `False` and provide the paths to your certificate, key, and optionally your CA bundle:
+
+~~~python
+#!/usr/bin/env python
+from quicpro.client import Client
+
+def main():
+    # Initialize the client in production mode
+    client = Client(
+        remote_address=("your.server.ip", 443),
+        timeout=5,
+        event_loop_max_workers=4,
+        demo_mode=False,        # Disable demo mode
+        certfile="path/to/cert.pem",
+        keyfile="path/to/key.pem",
+        cafile="path/to/ca.pem"  # Optional, if available
+    )
+    
+    # Send a GET request
+    response = client.request("GET", "https://your.server.com", params={"q": "production-test"})
+    print("Response Status Code:", response.status_code)
+    print("Response Content:", response.content)
+    client.close()
+
+if __name__ == "__main__":
+    main()
+~~~
+
+---
+
+## What’s Next / What Needs Improvement
+
+While quicpro is integrated and functional, future enhancements include:
+
+1. **Standards Compliance & Edge Cases:**  
+   - Achieve full adherence to QUIC (RFC 9000–9002) and HTTP/3 RFCs, including support for 0‑RTT, key updates, and comprehensive QPACK dynamic table management.
+   - Enhance handling of out‑of‑order packets and fine-tune congestion control under adverse network conditions.
+
+2. **TLS Integration:**  
+   - Integrate a production‑grade TLS library for a complete TLS 1.3 handshake.
+   - Support certificate chains, perform proper revocation checks, and implement secure key derivation.
+
+3. **Robust Error Handling & Recovery:**  
+   - Improve state management, logging, and error recovery procedures.
+   - Enhance retransmission logic, timer accuracy, and support for network migration.
+
+4. **Performance & Concurrency:**  
+   - Transition to an asynchronous I/O model or further optimize the synchronous thread‑pool model for handling a large number of concurrent connections.
+
+5. **Interoperability Testing:**  
+   - Conduct extensive integration tests and interoperability trials with other QUIC/HTTP‑3 implementations.
+
+---
+
+## Acknowledgments
+
+A significant part of the integration and initial development of **quicpro** was achieved with the assistance of OpenAI’s o3‑mini model.
+
+---
+
+## Contributing
+
+Contributions are welcome! Please fork the repository, implement your changes, and open a pull request. Follow [PEP 8](https://www.python.org/dev/peps/pep-0008/) style guidelines and include tests for any modifications.
+
+---
 
 ## License
 
-MIT License
+This project is released under the MIT License — see the [LICENSE](LICENSE) file for details.
