@@ -1,3 +1,4 @@
+# pylint: disable=duplicate-code
 """
 Test module for the HTTP3Receiver.
 """
@@ -5,28 +6,11 @@ Test module for the HTTP3Receiver.
 import unittest
 from quicpro.receiver.http3_receiver import HTTP3Receiver
 from quicpro.exceptions.http3_frame_error import HTTP3FrameError
-
-class DummyConsumerApp:
-    def __init__(self):
-        self.received_message = None
-
-    def consume(self, message: str) -> None:
-        self.received_message = message
-
-class DummyDecoder:
-    def __init__(self, consumer_app):
-        self.consumer_app = consumer_app
-
-    def decode(self, frame: bytes) -> None:
-        if frame.startswith(b"Frame(") and frame.endswith(b")"):
-            self.consumer_app.consume(frame[len(b"Frame("):-1].decode("utf-8"))
-        else:
-            self.consumer_app.consume(frame.decode("utf-8"))
-
-    def consume(self, message: str) -> None:
-        self.consumer_app.consume(message)
+from tests.test_utils.dummy_consumer_app import DummyConsumerApp
+from tests.test_utils.dummy_decoder import DummyDecoder
 
 class TestReceiverPipeline(unittest.TestCase):
+    """Test cases for the HTTP3Receiver class."""
     def test_receiver_pipeline(self):
         dummy_consumer = DummyConsumerApp()
         decoder = DummyDecoder(dummy_consumer)
@@ -40,6 +24,7 @@ class TestReceiverPipeline(unittest.TestCase):
             self.fail(f"HTTP3Receiver raised an unexpected error: {e}")
         self.assertEqual(dummy_consumer.received_message, "TestHeader")
 
+    """Test that an invalid frame raises an HTTP3FrameError."""
     def test_receiver_invalid_frame(self):
         with self.assertRaises(HTTP3FrameError):
             http3_receiver = HTTP3Receiver(decoder=DummyDecoder(None))

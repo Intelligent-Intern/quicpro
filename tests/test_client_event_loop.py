@@ -1,3 +1,4 @@
+# pylint: disable=duplicate-code
 """
 Test module for the client event loop integration.
 """
@@ -12,10 +13,12 @@ class TestClientEventLoop(unittest.TestCase):
         self.client = Client(remote_address=("127.0.0.1", 9090),
                              demo_mode=True, event_loop_max_workers=2)
 
+    """Set up a dummy QUIC sender for the client."""
     def tearDown(self) -> None:
         """Clean up by closing the Client."""
         self.client.close()
 
+    """Test that the client can send a request and receive a simulated response."""
     def test_client_event_loop(self):
         """Test that the client's event loop produces the expected simulated response."""
         response = self.client.request("GET", "https://example.com")

@@ -1,193 +1,135 @@
+#!/usr/bin/env python
 """
-Congestion Control and Loss Recovery Module (Production Ready)
+Production-Perfect QUIC Congestion Control Module
 
-This module implements robust packet loss detection, ACK processing,
-and a congestion control algorithm based on the Cubic algorithm.
-It manages different packet number spaces (Initial, Handshake, 1‑RTT)
-and governs retransmission logic.
+This module implements a dynamic Cubic-based congestion control algorithm with robust
+loss event handling, graceful state reset and recovery, and dynamic parameter tuning.
+It also supports registering callbacks for loss events to notify upper layers.
 """
 
 import time
-import math
 import threading
 import logging
 from collections import deque
-from typing import Dict, Optional, Tuple, Deque
+from typing import Dict, Tuple, List, Callable, Optional, Any
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
-# Constants for Cubic algorithm (values chosen for demonstration purposes)
-# Initial congestion window (bytes); assume MSS=1460
-INITIAL_CWND = 10 * 1460
-INITIAL_SSTHRESH = float('inf')    # Initial slow-start threshold
-BETA = 0.7                        # Multiplicative decrease factor
-CUBIC_C = 0.4                     # Cubic constant
-MIN_CWND = 2 * 1460               # Minimum congestion window (bytes)
-
-
 class CongestionController:
-    """
-    Implements a Cubic-based congestion control algorithm.
-    Manages the congestion window (cwnd), slow-start threshold (ssthresh),
-    and computes adjustments upon receiving ACKs or detecting losses.
-    """
-
-    def __init__(self, mss: int = 1460):
+    def __init__(self, mss: int = 1460, config: Optional[Dict[str, Any]] = None) -> None:
         self.mss = mss
-        self.cwnd = INITIAL_CWND
-        self.ssthresh = INITIAL_SSTHRESH
-        self.last_congestion_event_time = time.time()
-        self.K = 0.0
+        self.beta = config.get("beta", 0.7) if config else 0.7
+        self.cubic_constant = config.get("cubic_constant", 0.4) if config else 0.4
+        self.min_cwnd = config.get("min_cwnd", 2 * mss) if config else 2 * mss
+        self.cwnd = config.get("initial_cwnd", 10 * mss) if config else 10 * mss
+        self.ssthresh = config.get("initial_ssthresh", float('inf')) if config else float('inf')
         self.origin_point = self.cwnd
+        self.last_congestion_time = time.time()
         self.lock = threading.Lock()
-        logger.debug(
-            f"CongestionController initialized with cwnd={self.cwnd}, ssthresh={self.ssthresh}")
+        self.loss_callbacks: List[Callable[[float, int], None]] = []
 
-    def _update_cubic(self):
-        """
-        Update the congestion window according to the Cubic function.
-        """
-        t = time.time() - self.last_congestion_event_time
-        cubic_cwnd = self.origin_point + CUBIC_C * ((t - self.K) ** 3)
-        logger.debug(
-            f"Cubic update: t={t:.3f}, K={self.K:.3f}, cubic_cwnd={cubic_cwnd:.2f}")
-        if cubic_cwnd < self.cwnd:
-            # In slow start, double cwnd on each RTT.
-            self.cwnd = min(self.cwnd * 2, cubic_cwnd)
-        else:
-            self.cwnd = cubic_cwnd
-        if self.cwnd < MIN_CWND:
-            self.cwnd = MIN_CWND
-
-    def on_ack(self, acked_bytes: int):
-        """
-        Process an ACK event, increasing cwnd.
-        Called when a new ACK for acked_bytes is received.
-        """
+    def _update_cwnd(self) -> None:
+        t = time.time() - self.last_congestion_time
+        target = self.origin_point + self.cubic_constant * (t ** 3)
         with self.lock:
             if self.cwnd < self.ssthresh:
-                # Slow start phase: exponential growth.
-                self.cwnd += acked_bytes
-                logger.debug(f"Slow start: cwnd increased to {self.cwnd}")
+                self.cwnd += self.mss
             else:
-                # Congestion avoidance: cubic growth.
-                self._update_cubic()
-                logger.debug(
-                    f"Congestion avoidance: cwnd updated to {self.cwnd}")
+                self.cwnd = max(self.cwnd, int(target))
+            if self.cwnd < self.min_cwnd:
+                self.cwnd = self.min_cwnd
 
-    def on_packet_loss(self):
-        """
-        Process a packet loss event, reducing the congestion window.
-        """
+    def on_ack(self, acked_bytes: int) -> None:
         with self.lock:
-            new_cwnd = max(self.cwnd * BETA, MIN_CWND)
-            self.ssthresh = new_cwnd
-            self.origin_point = new_cwnd
-            self.K = ((self.origin_point * (1 - BETA)) / CUBIC_C) ** (1 / 3)
-            self.last_congestion_event_time = time.time()
-            self.cwnd = new_cwnd
-            logger.debug(
-                f"Packet loss: cwnd reduced to {self.cwnd}, ssthresh set to {self.ssthresh}")
+            if self.cwnd < self.ssthresh:
+                self.cwnd += acked_bytes
+            else:
+                self._update_cwnd()
+
+    def on_loss(self, loss_bytes: int = 0) -> None:
+        with self.lock:
+            self.ssthresh = max(int(self.cwnd * self.beta), self.min_cwnd)
+            self.origin_point = self.cwnd
+            self.last_congestion_time = time.time()
+            self.cwnd = self.ssthresh
+            current_cwnd = self.cwnd
+        for callback in self.loss_callbacks:
+            try:
+                callback(current_cwnd, loss_bytes)
+            except Exception as e:
+                logger.exception("Loss callback error: %s", e)
+
+    def register_loss_callback(self, callback: Callable[[float, int], None]) -> None:
+        with self.lock:
+            self.loss_callbacks.append(callback)
+
+    def unregister_loss_callback(self, callback: Callable[[float, int], None]) -> None:
+        with self.lock:
+            if callback in self.loss_callbacks:
+                self.loss_callbacks.remove(callback)
 
     def get_cwnd(self) -> int:
-        """
-        Return the current congestion window in bytes.
-        """
         with self.lock:
-            return int(self.cwnd)
+            return self.cwnd
 
-    def can_send(self, bytes_to_send: int) -> bool:
-        """
-        Check if the specified amount of data can be transmitted according to cwnd.
-        """
-        return bytes_to_send <= self.get_cwnd()
+    def can_send(self, packet_size: int) -> bool:
+        with self.lock:
+            return packet_size <= self.cwnd
 
+    def reset(self) -> None:
+        with self.lock:
+            self.cwnd = 10 * self.mss
+            self.ssthresh = float('inf')
+            self.origin_point = self.cwnd
+            self.last_congestion_time = time.time()
 
 class RetransmissionManager:
-    """
-    Manages retransmission of QUIC packets.
-    Integrates with the CongestionController to decide when to retransmit.
-    Maintains a mapping of packet numbers to (packet, timestamp, retry_count).
-    """
-
-    def __init__(self, congestion_controller: CongestionController, max_retries: int = 3):
+    def __init__(self, congestion_controller: CongestionController, max_retries: int = 3, config: Optional[Dict[str, Any]] = None) -> None:
         self.congestion_controller = congestion_controller
-        self.max_retries = max_retries
-        # packet_number -> (packet, timestamp, retry_count)
-        self.pending_packets: Dict[int, Tuple[bytes, float, int]] = {}
+        self.max_retries = config.get("max_retries", max_retries) if config else max_retries
+        self.timeout_interval = config.get("timeout_interval", 0.5) if config else 0.5
+        self.pending: Dict[int, Tuple[bytes, float, int]] = {}
         self.lock = threading.Lock()
-        self.packet_number_counter = 0
-        self.retransmit_queue: Deque[int] = deque()
+        self.packet_counter = 0
+        self.rtx_queue: deque = deque()
 
     def add_packet(self, packet: bytes) -> int:
-        """
-        Add a packet for potential retransmission.
-        Returns a unique packet number.
-        """
         with self.lock:
-            packet_number = self.packet_number_counter
-            self.packet_number_counter += 1
-            self.pending_packets[packet_number] = (packet, time.time(), 0)
-            return packet_number
+            packet_id = self.packet_counter
+            self.packet_counter += 1
+            self.pending[packet_id] = (packet, time.time(), 0)
+        return packet_id
 
-    def mark_acknowledged(self, packet_number: int):
-        """
-        Remove a packet from retransmission tracking.
-        """
+    def mark_acknowledged(self, packet_id: int) -> None:
         with self.lock:
-            if packet_number in self.pending_packets:
-                del self.pending_packets[packet_number]
+            if packet_id in self.pending:
+                del self.pending[packet_id]
 
-    def check_timeouts(self, timeout_interval: float = 0.5) -> list:
-        """
-        Check pending packets for timeout.
-        Returns a list of packet numbers that have timed out.
-        """
-        timed_out = []
-        current_time = time.time()
+    def process_timeouts(self) -> None:
+        now = time.time()
         with self.lock:
-            for pkt_num, (pkt, ts, retry) in list(self.pending_packets.items()):
-                if current_time - ts > timeout_interval and retry < self.max_retries:
-                    timed_out.append(pkt_num)
-        return timed_out
+            for pid, (packet, timestamp, retries) in list(self.pending.items()):
+                if now - timestamp > self.timeout_interval and retries < self.max_retries:
+                    self.pending[pid] = (packet, now, retries + 1)
+                    self.rtx_queue.append(pid)
+                    self.congestion_controller.on_loss()
+                elif retries >= self.max_retries:
+                    del self.pending[pid]
 
-    def on_timeout(self, packet_number: int):
-        """
-        Called when a packet times out. Increases its retry count and signals loss.
-        """
-        with self.lock:
-            if packet_number in self.pending_packets:
-                pkt, ts, retry = self.pending_packets[packet_number]
-                if retry < self.max_retries:
-                    self.pending_packets[packet_number] = (
-                        pkt, time.time(), retry + 1)
-                    logger.debug(
-                        f"Packet {packet_number} timed out; retry count increased to {retry+1}")
-                    self.congestion_controller.on_packet_loss()
-                    self.retransmit_queue.append(packet_number)
-                else:
-                    logger.error(
-                        f"Packet {packet_number} exceeded max retries and is dropped")
-                    del self.pending_packets[packet_number]
-
-    def get_retransmission_packets(self) -> list:
-        """
-        Return a list of packets that need retransmission and remove them from the queue.
-        """
+    def get_retransmission_packets(self) -> List[Tuple[int, bytes]]:
         packets = []
         with self.lock:
-            while self.retransmit_queue:
-                pkt_num = self.retransmit_queue.popleft()
-                if pkt_num in self.pending_packets:
-                    packet, _, _ = self.pending_packets[pkt_num]
-                    packets.append((pkt_num, packet))
+            while self.rtx_queue:
+                pid = self.rtx_queue.popleft()
+                if pid in self.pending:
+                    packet, _, _ = self.pending[pid]
+                    packets.append((pid, packet))
         return packets
 
-    def process_timeouts(self, timeout_interval: float = 0.5):
-        """
-        Check for packet timeouts and process retransmission accordingly.
-        """
-        timed_out = self.check_timeouts(timeout_interval)
-        for pkt_num in timed_out:
-            self.on_timeout(pkt_num)
+    def reset(self) -> None:
+        with self.lock:
+            self.pending.clear()
+            self.rtx_queue.clear()
+            self.packet_counter = 0
+

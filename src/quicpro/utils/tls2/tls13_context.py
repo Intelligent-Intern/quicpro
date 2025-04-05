@@ -14,7 +14,6 @@ from .base import generate_random_bytes, log_tls_debug
 
 logger = logging.getLogger(__name__)
 
-
 class TLS13Context(TLSContext):
     def __init__(self, certfile: str, keyfile: str, cafile: Optional[str] = None, demo: bool = True) -> None:
         self.demo = demo
@@ -28,8 +27,7 @@ class TLS13Context(TLSContext):
                 logger.exception("Failed to load certificate or key.")
                 raise e
         else:
-            logger.info(
-                "Demo mode: skipping loading certificate or key in TLS13Context.")
+            logger.info("Demo mode: skipping loading certificate or key in TLS13Context.")
         if cafile:
             try:
                 self.context.load_verify_locations(cafile)
@@ -52,10 +50,15 @@ class TLS13Context(TLSContext):
         self.ssl_sock: Optional[ssl.SSLSocket] = None
 
     def perform_handshake(self, sock: socket.socket, server_hostname: str) -> None:
+        """
+        Perform the TLS 1.3 handshake over the provided socket.
+        Args:
+            sock (socket.socket): A connected socket.
+            server_hostname (str): The hostname for SNI.
+        """
         log_tls_debug("Starting TLS 1.3 handshake")
         if self.demo:
-            log_tls_debug(
-                "Demo mode: performing dummy handshake, marking handshake as complete")
+            log_tls_debug("Demo mode: performing dummy handshake, marking handshake as complete")
             self.handshake_completed = True
             if self._negotiated_keys is None:
                 self._negotiated_keys = {
@@ -64,8 +67,7 @@ class TLS13Context(TLSContext):
                 }
             return
         try:
-            self.ssl_sock = self.context.wrap_socket(
-                sock, server_hostname=server_hostname, do_handshake_on_connect=False)
+            self.ssl_sock = self.context.wrap_socket(sock, server_hostname=server_hostname, do_handshake_on_connect=False)
             self.ssl_sock.do_handshake()
             self.handshake_completed = True
             self._negotiated_keys = {
@@ -81,32 +83,50 @@ class TLS13Context(TLSContext):
             raise RuntimeError("Unexpected error during handshake") from e
 
     def encrypt(self, plaintext: bytes) -> bytes:
+        """
+        Encrypt plaintext using the TLS 1.3 context.
+        Args:
+            plaintext (bytes): Data to encrypt.
+        Returns:
+            bytes: Simulated encrypted data.
+        Raises:
+            RuntimeError: If handshake is not complete.
+        """
         if not self.handshake_completed or self._negotiated_keys is None:
-            raise RuntimeError(
-                "TLS 1.3 handshake has not been completed. Cannot encrypt data.")
+            raise RuntimeError("TLS 1.3 handshake has not been completed. Cannot encrypt data.")
         simulated_prefix = b"TLS13_ENC:"
         ciphertext = simulated_prefix + plaintext
-        log_tls_debug(
-            f"Simulated encryption completed for {len(plaintext)} bytes")
+        log_tls_debug(f"Simulated encryption completed for {len(plaintext)} bytes")
         return ciphertext
 
     def decrypt(self, ciphertext: bytes) -> bytes:
+        """
+        Decrypt ciphertext using the TLS 1.3 context.
+        Args:
+            ciphertext (bytes): Data to decrypt.
+        Returns:
+            bytes: Decrypted plaintext.
+        Raises:
+            RuntimeError: If handshake is not complete.
+            ValueError: If decryption fails.
+        """
         if not self.handshake_completed or self._negotiated_keys is None:
-            raise RuntimeError(
-                "TLS 1.3 handshake has not been completed. Cannot decrypt data.")
+            raise RuntimeError("TLS 1.3 handshake has not been completed. Cannot decrypt data.")
         simulated_prefix = b"TLS13_ENC:"
         if not ciphertext.startswith(simulated_prefix):
-            raise ValueError(
-                "Ciphertext format invalid: missing expected TLS13_ENC header.")
+            raise ValueError("Ciphertext format invalid: missing expected TLS13_ENC header.")
         plaintext = ciphertext[len(simulated_prefix):]
-        log_tls_debug(
-            f"Simulated decryption completed for {len(plaintext)} bytes")
+        log_tls_debug(f"Simulated decryption completed for {len(plaintext)} bytes")
         return plaintext
 
     def update_keys(self) -> None:
+        """
+        Update (rotate) the negotiated TLS keys.
+        Raises:
+            RuntimeError: If handshake is not complete.
+        """
         if not self.handshake_completed:
-            raise RuntimeError(
-                "TLS 1.3 handshake has not been completed. Cannot update keys.")
+            raise RuntimeError("TLS 1.3 handshake has not been completed. Cannot update keys.")
         self._negotiated_keys = {
             "read_key": generate_random_bytes(32),
             "write_key": generate_random_bytes(32)

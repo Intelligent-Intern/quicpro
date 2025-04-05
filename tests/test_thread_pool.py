@@ -1,22 +1,13 @@
-import time
-from quicpro.utils.event_loop.thread_pool import ThreadPool
+"""
+ThreadPool test using shared threadpool helper.
+"""
+import unittest
+from tests.test_utils.threadpool_helper import run_threadpool_sample
 
-
-def test_thread_pool():
-    task_executed = False
-
-    def sample_task():
-        nonlocal task_executed
-        task_executed = True
-
-    pool = ThreadPool(max_workers=2)
-    future = pool.submit(sample_task)
-    # Wait for task to complete
-    future.result(timeout=1)
-    pool.shutdown()
-    assert task_executed, "ThreadPool did not execute sample_task"
-
+class TestThreadPool(unittest.TestCase):
+    def test_sample_task(self):
+        executed = run_threadpool_sample()
+        self.assertTrue(executed, "ThreadPool did not execute sample_task")
 
 if __name__ == "__main__":
-    test_thread_pool()
-    print("ThreadPool test passed")
+    unittest.main()

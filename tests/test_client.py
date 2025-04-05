@@ -1,10 +1,7 @@
+# pylint: disable=duplicate-code
 """
 Test module for the Client.
 """
-
-import threading
-import socket
-import time
 import unittest
 from quicpro.client import Client, Response
 
